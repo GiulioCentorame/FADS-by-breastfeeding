@@ -1,0 +1,54 @@
+# Main entrypoint of the workflow. 
+# Please follow the best practices: 
+# https://snakemake.readthedocs.io/en/stable/snakefiles/best_practices.html,
+# in particular regarding the standardized folder structure mentioned there. 
+import os
+import sys
+from snakemake.utils import min_version
+min_version("6.0")
+
+# Obtain real path for Snakefile
+SDIR = os.path.realpath(os.path.dirname(srcdir("Snakefile")))
+# Run everything in safe mode: http://redsymbol.net/articles/unofficial-bash-strict-mode/
+# -x just prints out the commands that you just ran
+shell.prefix(f"set -euxo pipefail; IFS=$'\n\t'")
+
+# Save report on the workflow execution
+report: "report/workflow.rst"
+
+configfile: "config/config.yaml"
+
+# Define temp directory
+TEMP_DIR = config.pop("tempdir", "temp")
+if TEMP_DIR != "temp":
+    if os.path.exists("temp"):
+        if os.path.islink("temp") and os.path.realpath("temp") == os.path.realpath(
+            TEMP_DIR
+        ):
+            print("The temp dir has already been linked.")
+        else:
+            sys.exit("temp/ already in use, please move it before running.")
+    else:
+        shell("ln -s {TEMP_DIR} temp")
+
+rule all:
+    input:
+        [],
+
+# rule Example:
+#     input:
+#         file=""
+#     output:
+#     resources:
+#         mem=config.get("mem", 8),
+#     threads: config.get("threads", 8)
+#     conda:
+#         # NOTE: Can be different from rule to rule
+#         "envs/env.yml"
+#     log:
+#         "example.out.log",
+#     params:
+
+#     shell:
+#         """
+#         """
