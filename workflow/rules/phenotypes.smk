@@ -6,7 +6,7 @@ rule convert_basket:
     output:
         protected(f"{TEMP_DIR}/phenotypes/ukb.rda")
     conda:
-        "envs/ukbtools.yaml"
+        "../envs/ukbtools.yaml"
     script:
         "../scripts/convert_basket.R"
 
@@ -17,7 +17,7 @@ rule extract_phenotype_variables:
     output:
         f"{TEMP_DIR}/phenotypes/phenotypes_raw.rda"
     conda:
-        "envs/data.table.yaml"
+        "../envs/data.table.yaml"
     script:
         "../scripts/extract_phenotypes.R"
 
@@ -27,6 +27,6 @@ rule clean_phenotypes:
     output:
         f"{TEMP_DIR}/phenotypes/phenotypes_clean.rda"
     conda:
-        "envs/clean_phenotypes.yaml"
+        "../envs/clean_phenotypes.yaml"
     script:
         "../scripts/clean_phenotypes.R"
