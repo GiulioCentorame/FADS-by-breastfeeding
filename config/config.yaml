@@ -1,1 +1,5 @@
-example: "option"
+basket_path: /path/to/basket/folder
+
+basket_filename: ukbXXXXX
+
+chromosome_11_bgen: /path.bgen

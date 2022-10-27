@@ -5,7 +5,7 @@
 import os
 import sys
 from snakemake.utils import min_version
-min_version("6.0")
+min_version("7.0")
 
 # Obtain real path for Snakefile
 SDIR = os.path.realpath(os.path.dirname(srcdir("Snakefile")))
@@ -33,7 +33,9 @@ if TEMP_DIR != "temp":
 
 rule all:
     input:
-        [],
+        f"{TEMP_DIR}/phenotypes/ukb.rda"
+
+include: "rules/phenotypes.smk"
 
 # rule Example:
 #     input:
