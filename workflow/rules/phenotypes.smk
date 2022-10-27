@@ -1,7 +1,7 @@
 rule convert_basket:
     # Generate an R file with all the phenotypes in the basket
     input:
-        multiext(f"{config.get('basket_path')}/{config.get('basket_filename))}",
+        multiext(f"{config.get('basket_path')}/{config.get('basket_filename')}",
                  ".r", ".tab", ".html")
     output:
         protected(f"{TEMP_DIR}/phenotypes/ukb.rda")
