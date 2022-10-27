@@ -7,8 +7,11 @@ extract_ukb <- function(data_path, filename, output) {
     filename,
     path = data_path,
     # Without this option it will take ages
-    n_threads = max
+    n_threads = "max"
   )
+
+  # Save object
+  base::save(full_ukb, file = output)
 }
 
 # Run
