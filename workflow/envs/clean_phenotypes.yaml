@@ -1,4 +1,8 @@
 channels:
   - conda-forge
+  - bioconda
 dependencies:
-  - dtplyr
+  - r-dtplyr
+  - r-dplyr
+  - r-lubridate
+  - r-stringr
