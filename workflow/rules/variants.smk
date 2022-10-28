@@ -11,6 +11,9 @@ rule extract_FADS_variants_allelic_dosage:
         "../envs/plink2.yaml"
     params:
         output_prefix = f"{TEMP_DIR}/variants/variants"
+    threads: 36
+    resources:
+        mem_mb = 20000
     shell:
         """
         plink2 \
