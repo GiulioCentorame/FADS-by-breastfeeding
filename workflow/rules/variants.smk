@@ -14,7 +14,6 @@ rule extract_FADS_variants_allelic_dosage:
         """
         plink2 \
         --bgen {input.bgen} ref-first \
-        --sample {input.sample} \
         --export A \
         --snps rs174575, rs1535, rs174583 \
         --out {params.output_prefix}
