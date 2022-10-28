@@ -15,7 +15,9 @@ rule extract_phenotype_variables:
         f"{TEMP_DIR}/phenotypes/phenotypes_raw.tsv"
     conda:
         "../envs/fmrib-unpack.yaml"
-    shell:
+    log:
+        "../../logs/extract_phenotype_variables.log"
+   shell:
         """
         fmrib_unpack \
         --variable {input[1]}\
