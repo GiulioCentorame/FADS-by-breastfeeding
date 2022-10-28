@@ -33,9 +33,12 @@ if TEMP_DIR != "temp":
 
 rule all:
     input:
-        f"{TEMP_DIR}/phenotypes/phenotypes_raw.tsv"
+        f"{TEMP_DIR}/phenotypes/phenotypes_raw.tsv",
+        f"{TEMP_DIR}/variants/variants.raw"
 
 include: "rules/phenotypes.smk"
+
+include: "rules/variants.smk"
 
 # rule Example:
 #     input:
