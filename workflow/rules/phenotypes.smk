@@ -17,7 +17,7 @@ rule extract_phenotype_variables:
         "../envs/fmrib-unpack.yaml"
     log:
         "../../logs/extract_phenotype_variables.log"
-   shell:
+    shell:
         """
         fmrib_unpack \
         --variable {input[1]}\
