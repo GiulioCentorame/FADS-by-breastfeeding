@@ -1,0 +1,11 @@
+# Age
+f.34.
+# Breastfed or not
+f.1677.
+# Principal components
+f.22009.
+# FI full score
+f.20191.
+f.20016.
+# Age completed full time Education
+f.845.

@@ -1,7 +1,16 @@
+rule strip_comments:
+    input:
+        "../../config/variables.txt"
+    output:
+        f"{TEMP_DIR}/phenotypes/phenotypes.txt"
+    shell:
+        "grep -v '#' {input} > {output}"
+
 rule extract_phenotype_variables:
     # Extract the variables of interest in the UKB
     input:
-        f"{config.get('basket_path')}/{config.get('basket_filename')}.tab"
+        f"{config.get('basket_path')}/{config.get('basket_filename')}.tab",
+        f"{TEMP_DIR}/phenotypes/phenotypes.txt"
     output:
         f"{TEMP_DIR}/phenotypes/phenotypes_raw.tsv"
     conda:
@@ -9,9 +18,9 @@ rule extract_phenotype_variables:
     shell:
         """
         fmrib_unpack \
-        --variable 34 \
+        --variable {input[1]}\
         {output} \
-        {input}
+        {input[0]}
         """
 
 rule clean_phenotypes:
