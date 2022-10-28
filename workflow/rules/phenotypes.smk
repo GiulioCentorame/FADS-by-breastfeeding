@@ -1,6 +1,6 @@
 rule strip_comments:
     input:
-        "../config/variables.txt"
+        "config/variables.txt"
     output:
         f"{TEMP_DIR}/phenotypes/phenotypes.txt"
     shell:
@@ -16,7 +16,7 @@ rule extract_phenotype_variables:
     conda:
         "../envs/fmrib-unpack.yaml"
     log:
-        "../logs/extract_phenotype_variables.log"
+        "logs/extract_phenotype_variables.log"
     shell:
         """
         fmrib_unpack \
