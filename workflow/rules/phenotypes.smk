@@ -9,10 +9,14 @@ rule strip_comments:
 rule extract_phenotype_variables:
     # Extract the variables of interest in the UKB
     input:
-        f"{config.get('basket_path')}/{config.get('basket_filename')}.tab",
-        f"{TEMP_DIR}/phenotypes/phenotypes.txt"
+        tab_files = expand(f"{config.get('basket_path')}/{{filename}}.tab",
+                           filename = config.get("basket_filename")),
+        list_phenotypes = f"{TEMP_DIR}/phenotypes/phenotypes.txt"
     output:
         f"{TEMP_DIR}/phenotypes/phenotypes_raw.tsv"
+    threads: 16
+    resources:
+        mem_mb=10000
     conda:
         "../envs/fmrib-unpack.yaml"
     log:
@@ -20,9 +24,9 @@ rule extract_phenotype_variables:
     shell:
         """
         fmrib_unpack \
-        --variable {input[1]}\
+        --variable {input.list_phenotypes}\
         {output} \
-        {input[0]}
+        {input.tab_files}
         """
 
 rule clean_phenotypes:
