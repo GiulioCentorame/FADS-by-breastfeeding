@@ -1,6 +1,6 @@
 rule strip_comments:
     input:
-        "../../config/variables.txt"
+        "../config/variables.txt"
     output:
         f"{TEMP_DIR}/phenotypes/phenotypes.txt"
     shell:
