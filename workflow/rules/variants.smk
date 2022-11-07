@@ -13,7 +13,9 @@ rule extract_FADS_variants_allelic_dosage:
         output_prefix = f"{TEMP_DIR}/variants/variants"
     threads: 36
     resources:
-        mem_mb = 20000
+    # HACK find a less memory-intensive way to get this
+    # Potentially bgenix + plink2?
+        mem_mb = 50000
     shell:
         """
         plink2 \
