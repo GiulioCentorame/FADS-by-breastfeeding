@@ -17,6 +17,8 @@
 845
 # Qualifications
 6138
+## Townsend deprivation index
+189
 ## Multiple deprivation
 # MI England
 26410
