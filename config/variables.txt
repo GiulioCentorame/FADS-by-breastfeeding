@@ -17,6 +17,13 @@
 845
 # Qualifications
 6138
+## Multiple deprivation
+# MI England
+26410
+# MI Scotland
+26427
+# MI Wales
+26426
 ## Metabolomics
 # Total DHA
 23450
