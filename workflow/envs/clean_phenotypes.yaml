@@ -2,7 +2,7 @@ channels:
   - conda-forge
   - bioconda
 dependencies:
-  - r-dtplyr
+  - r-fastverse
   - r-dplyr
   - r-lubridate
   - r-stringr
