@@ -16,7 +16,8 @@ rule extract_phenotype_variables:
         f"{TEMP_DIR}/phenotypes/phenotypes_raw.tsv"
     threads: 16
     resources:
-        mem_mb=10000
+        mem_mb=10000,
+        time_min=400
     conda:
         "../envs/fmrib-unpack.yaml"
     log:
