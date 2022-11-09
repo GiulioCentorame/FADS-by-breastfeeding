@@ -41,8 +41,8 @@ rule extract_variable_levels:
     shell:
         """
         cat {input.original_scripts} | \
-        grep -Fwf <(sed 's/^/f./' {input.list_phenotypes}) \
-        > {output.derived_script}
+        grep -Fwf <(sed 's/^/f./' {input.list_phenotypes}) > \
+        {output.derived_script}
         """
 
 rule clean_phenotypes:
