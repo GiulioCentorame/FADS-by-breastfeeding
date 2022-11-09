@@ -5,19 +5,17 @@ library(dplyr, warn.conflicts = FALSE)
 
 clean_phenotypes <- function(data, script, output) {
   # Open data
+  bd <- fread(data) %>%
+    lazy_dt(bd)
 
-  bd <- fread(data)
-
-  # Use predefined rules by UKB to assign variable levels
+  # Assign variable levels
   source(script)
-
-  # Create lazy access data for dtplyr
-  bd <- lazy_dt(bd)
 
   # Clean up data
   bd_clean <-
     bd %>%
     rename(
+      f.eid = eid,
       f.34.0.0 = age,
       f.31.0.0 = reported_sex,
       f.22001.0.0 = genetic_sex,
