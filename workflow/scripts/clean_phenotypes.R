@@ -86,7 +86,7 @@ clean_phenotypes <- function(data,
     # Have we transformed all the variable names?
     phenotypes_clean %>%
       names() %>%
-      grepl("[0-9]+\\.[0-9]+\\.[0-9]+", ., perl = TRUE)
+      grepl("^[0-9]+\\.[0-9]+\\.[0-9]+$", ., perl = TRUE)
   )) {
     warning("Some variables still have field IDs")
   }
