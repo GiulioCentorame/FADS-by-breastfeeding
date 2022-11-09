@@ -20,21 +20,22 @@ clean_phenotypes <- function(data,
   phenotypes_levels <- assign_levels(phenotypes)
 
   # Clean up data
+  # HACK move to its own function
   phenotypes_clean <-
     phenotypes_levels %>%
     rename(
-      f.eid = eid,
-      f.34.0.0 = age,
-      f.31.0.0 = reported_sex,
-      f.22001.0.0 = genetic_sex,
-      f.20191.0.0 = FI_online,
-      f.189.0.0 = Townsend_deprivation_index,
-      f.26410.0.0 = IMD_England,
-      f.26427.0.0 = IMD_Scotland,
-      f.26426.0.0 = IMD_Wales,
-      f.22001.0.0 = Batch,
-      f.22004.0.0 = Plate,
-      f.22008.0.0 = Well
+      eid                          =       f.eid,
+      age                          =    f.34.0.0,
+      reported_sex                 =    f.31.0.0,
+      genetic_sex                  = f.22001.0.0,
+      FI_online                    = f.20191.0.0,
+      Townsend_deprivation_index   =   f.189.0.0,
+      IMD_England                  = f.26410.0.0,
+      IMD_Scotland                 = f.26427.0.0,
+      IMD_Wales                    = f.26426.0.0,
+      Batch                        = f.22001.0.0,
+      Plate                        = f.22004.0.0,
+      Well                         = f.22008.0.0
     ) %>%
     # Change names for principal components files
     rename_with(
