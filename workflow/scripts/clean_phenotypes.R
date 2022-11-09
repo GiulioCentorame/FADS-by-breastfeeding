@@ -8,11 +8,6 @@ clean_phenotypes <- function(data, script, output) {
 
   bd <- fread(data)
 
-  # Test data is loaded correctly
-  if (is_empty(bd)) {
-    stop("Phenotype file empty")
-  }
-
   # Use predefined rules by UKB to assign variable levels
   source(script)
 
