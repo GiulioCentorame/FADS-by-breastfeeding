@@ -1,6 +1,5 @@
 library(data.table)
-library(dtplyr)
-library(dplyr, warn.conflicts = FALSE)
+library(dplyr)
 
 
 clean_phenotypes <- function(data,
@@ -9,8 +8,7 @@ clean_phenotypes <- function(data,
                              withdrawals,
                              output) {
   # Open data
-  bd <- fread(data) %>%
-    lazy_dt()
+  bd <- fread(data)
 
   # Load file lists
   std_exclusions <- fread(std_exclusions)
