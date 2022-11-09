@@ -33,7 +33,9 @@ rule extract_phenotype_variables:
 rule clean_phenotypes:
     input:
         data = f"{TEMP_DIR}/phenotypes/phenotypes_raw.tsv",
-        derived_script = "workflow/scripts/levels.R"
+        derived_script = "workflow/scripts/levels.R",
+        withdrawals = config.get("withdrawals"),
+        std_exclusions = config.get("std_exclusions")
     output:
         clean_data = f"{TEMP_DIR}/phenotypes/phenotypes_clean.tsv"
     conda:

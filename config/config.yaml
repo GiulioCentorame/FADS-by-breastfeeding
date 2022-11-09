@@ -5,3 +5,7 @@ basket_filename: ukbXXXXX
 chromosome_11_bgen: /path.bgen
 
 sample_file: /path.sample
+
+withdrawals: /path/to/withdrawals.csv
+
+std_exclusions: /path/to/std_exclusions.txt

@@ -24,3 +24,18 @@ Path to the UK Biobank bgen file for chromosome 11. Assumes the presence of `chr
 ```yaml
 chromosome_11_bgen: /path/chr11.bgen
 ```
+
+Path to the `.sample` file tied to the UKB application.
+``` yaml
+sample_file: /path.sample
+```
+
+Path to the withdrawals file (the most recent provided by UK Biobank):
+``` yaml
+withdrawals: /path/to/withdrawals.csv
+```
+
+Path the file including the standard exclusions from the genetic data
+``` yaml
+std_exclusions: /path/to/std_exclusions.txt
+```

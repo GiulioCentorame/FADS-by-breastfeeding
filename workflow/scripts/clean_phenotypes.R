@@ -3,10 +3,18 @@ library(dtplyr)
 library(dplyr, warn.conflicts = FALSE)
 
 
-clean_phenotypes <- function(data, script, output) {
+clean_phenotypes <- function(data,
+                             script,
+                             std_exclusions,
+                             withdrawals,
+                             output) {
   # Open data
   bd <- fread(data) %>%
     lazy_dt(bd)
+
+  # Load file lists
+  std_exclusions <- fread(std_exclusions)
+  withdrawals <- scan(withdrawals)
 
   # Assign variable levels
   source(script)
@@ -85,6 +93,16 @@ clean_phenotypes <- function(data, script, output) {
     warning("Some variables still have field IDs")
   }
 
+  # Remove std exclusions and withdrawals
+  bd_clean <-
+    bd_clean %>%
+    filter(
+      # Standard genetic QC exclusions
+      !(std_exclusions$IID %in% eid),
+      # Withdrawals
+      !(withdrawals %in% eid)
+    )
+
   # Write data
   fwrite(bd_clean, output, sep = "\t")
 }
@@ -92,5 +110,7 @@ clean_phenotypes <- function(data, script, output) {
 clean_phenotypes(
   data = snakemake@input$data,
   script = snakemake@input$derived_script,
+  std_exclusions = snakemake@input$std_exclusions,
+  withdrawals = snakemake@input$withdrawals,
   output = snakemake@output$clean_data
 )
