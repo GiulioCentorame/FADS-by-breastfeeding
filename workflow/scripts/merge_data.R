@@ -12,7 +12,9 @@ merge_data <- function(phenotypes_path, variants_path, output_path) {
     merge(phenotypes,
       variants[, .SD, .SDcols = !c("FID", "PAT", "MAT", "SEX", "PHENOTYPE")],
       by.x = "eid",
-      by.y = "IID"
+      by.y = "IID",
+      # Perform inner join
+      all = FALSE
     )
 
   # Write to disk
