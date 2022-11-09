@@ -1,25 +1,27 @@
 library(data.table)
 library(dplyr)
 
-
 clean_phenotypes <- function(data,
                              script,
                              std_exclusions,
                              withdrawals,
                              output) {
+  # Open function to assign levels
+  source(script)
+
   # Open data
-  bd <- fread(data)
+  phenotypes <- fread(data)
 
   # Load file lists
   std_exclusions <- fread(std_exclusions)
   withdrawals <- scan(withdrawals)
 
-  # Assign variable levels
-  source(script)
+  # Assign levels
+  phenotypes_levels <- assign_levels(phenotypes)
 
   # Clean up data
-  bd_clean <-
-    bd %>%
+  phenotypes_clean <-
+    phenotypes_levels %>%
     rename(
       f.eid = eid,
       f.34.0.0 = age,
@@ -79,12 +81,9 @@ clean_phenotypes <- function(data,
     # Remove fs at the beginning of every variable
     rename_with(~ gsub("f.", "", .x, fixed = TRUE))
 
-  # Perform operations
-  bd_clean <- as.data.table(bd_clean)
-
   if (any(
     # Have we transformed all the variable names?
-    bd_clean %>%
+    phenotypes_clean %>%
       names() %>%
       grepl("[0-9]+\\.[0-9]+\\.[0-9]+", ., perl = TRUE)
   )) {
@@ -92,8 +91,8 @@ clean_phenotypes <- function(data,
   }
 
   # Remove std exclusions and withdrawals
-  bd_clean <-
-    bd_clean %>%
+  phenotypes_clean <-
+    phenotypes_clean %>%
     filter(
       # Standard genetic QC exclusions
       !(std_exclusions$IID %in% eid),
@@ -102,7 +101,7 @@ clean_phenotypes <- function(data,
     )
 
   # Write data
-  fwrite(bd_clean, output, sep = "\t")
+  fwrite(phenotypes_clean, output, sep = "\t")
 }
 
 clean_phenotypes(
