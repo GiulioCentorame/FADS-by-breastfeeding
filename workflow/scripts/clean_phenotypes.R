@@ -96,9 +96,9 @@ clean_phenotypes <- function(data,
     phenotypes_clean %>%
     filter(
       # Standard genetic QC exclusions
-      !(std_exclusions$IID %in% eid),
+      !(eid %in% std_exclusions$IID),
       # Withdrawals
-      !(withdrawals %in% eid)
+      !(eid %in% withdrawals)
     )
 
   # Write data
