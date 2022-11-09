@@ -10,7 +10,7 @@ clean_phenotypes <- function(data,
                              output) {
   # Open data
   bd <- fread(data) %>%
-    lazy_dt(bd)
+    lazy_dt()
 
   # Load file lists
   std_exclusions <- fread(std_exclusions)
