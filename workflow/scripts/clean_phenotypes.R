@@ -34,9 +34,9 @@ clean_phenotypes <- function(data,
       IMD_England                  = f.26410.0.0,
       IMD_Scotland                 = f.26427.0.0,
       IMD_Wales                    = f.26426.0.0,
-      Batch                        = f.22001.0.0,
-      Plate                        = f.22004.0.0,
-      Well                         = f.22008.0.0
+      batch                        = f.22000.0.0,
+      plate                        = f.22004.0.0,
+      well                         = f.22008.0.0
     ) %>%
     # Remove fs at the beginning of every variable
     rename_with(~ gsub("f.", "", .x, fixed = TRUE)) %>%
