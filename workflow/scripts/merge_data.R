@@ -18,7 +18,7 @@ merge_data <- function(phenotypes_path, variants_path, output_path) {
     )
 
   # Write to disk
-  fwrite(merged_data, output_path, sep = "\t")
+  fwrite(merged_data, output_path, quote = FALSE, sep = "\t")
 }
 
 merge_data(

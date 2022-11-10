@@ -103,7 +103,7 @@ clean_phenotypes <- function(data,
     )
 
   # Write data
-  fwrite(phenotypes_clean, output, sep = "\t")
+  fwrite(phenotypes_clean, output, quote = FALSE, sep = "\t")
 }
 
 clean_phenotypes(
