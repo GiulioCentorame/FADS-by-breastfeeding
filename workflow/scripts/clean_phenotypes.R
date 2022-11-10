@@ -44,43 +44,43 @@ clean_phenotypes <- function(data,
     rename_with(
       ~ sub("22009", "principal_component", .x, fixed = TRUE) %>%
         sub(".0.", "_", ., fixed = TRUE),
-      .cols = starts_with("f.22009.")
+      .cols = starts_with("22009.")
     ) %>%
     # Change names for FI assessment centre
     rename_with(
       ~ sub("20016", "FI_centre", .x, fixed = TRUE) %>%
         sub("\\.0$", "_", .) %>%
         gsub(".", "_", ., fixed = TRUE),
-      .cols = starts_with("f.20016.")
+      .cols = starts_with("20016.")
     ) %>%
     # Change names for age completed FT education
     rename_with(
       ~ sub("845", "age_completed_ft_education", .x, fixed = TRUE) %>%
         sub("\\.0$", "_", .) %>%
         gsub(".", "_", ., fixed = TRUE),
-      .cols = starts_with("f.845.")
+      .cols = starts_with("845.")
     ) %>%
     # Change names for qualification variables
     rename_with(
       ~ sub("6138", "qualifications", .x, fixed = TRUE) %>%
         sub(".0.", "_", ., fixed = TRUE),
-      .cols = starts_with("f.6138.")
+      .cols = starts_with("6138.")
     ) %>%
     # Change names for DHA variables
     rename_with(
       ~ sub("23450", "DHA_total", .x, fixed = TRUE) %>%
         sub(".0.", "_", ., fixed = TRUE),
-      .cols = starts_with("f.23450.")
+      .cols = starts_with("23450.")
     ) %>%
     rename_with(
       ~ sub("23457", "DHA_to_FA_ratio", .x, fixed = TRUE) %>%
         sub(".0.", "_", ., fixed = TRUE),
-      .cols = starts_with("f.23457.")
+      .cols = starts_with("23457.")
     ) %>%
     rename_with(
       ~ sub("26231", "DHA_PRS", .x, fixed = TRUE) %>%
         sub(".0.0", "", ., fixed = TRUE),
-      .cols = starts_with("f.26231.")
+      .cols = starts_with("26231.")
     )
 
   if (any(
