@@ -38,6 +38,8 @@ clean_phenotypes <- function(data,
       Plate                        = f.22004.0.0,
       Well                         = f.22008.0.0
     ) %>%
+    # Remove fs at the beginning of every variable
+    rename_with(~ gsub("f.", "", .x, fixed = TRUE)) %>%
     # Change names for principal components files
     rename_with(
       ~ sub("22009", "principal_component", .x, fixed = TRUE) %>%
@@ -79,9 +81,7 @@ clean_phenotypes <- function(data,
       ~ sub("26231", "DHA_PRS", .x, fixed = TRUE) %>%
         sub(".0.0", "", ., fixed = TRUE),
       .cols = starts_with("f.26231.")
-    ) %>%
-    # Remove fs at the beginning of every variable
-    rename_with(~ gsub("f.", "", .x, fixed = TRUE))
+    )
 
   if (any(
     # Have we transformed all the variable names?
