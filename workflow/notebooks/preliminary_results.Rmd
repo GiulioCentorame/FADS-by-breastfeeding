@@ -410,7 +410,7 @@ ses_model <- function(data,
 
 ## Principal components models
 
-Modelled as $Y \sim SNP + age + SES + \sum^{10}_{n=1}PC_{n}$:
+Modelled as $Y \sim SNP + sex + age + \sum^{10}_{n=1}PC_{n}$:
 
 ```{r pc-ses-models-setup, echo=FALSE}
 # Model including both SES and the first 10 PCs
@@ -422,7 +422,7 @@ pc_ses_model <- function(data,
          \(x) lm(formula(paste(outcome, 
                    "~",
                    SNP_name,
-                   "+ sex + age + Townsend_deprivation_index +",
+                   "+ sex + age + ",
                    paste(paste0("principal_component_", 1:10),
                          collapse = " + "))),
              data = x)
@@ -458,7 +458,7 @@ pc_ses_model <- function(data,
 
 ## Genetic QC effect models
 
-Modelled as $Y \sim SNP + age + SES + batch$:
+Modelled as $Y \sim SNP + sex + age + batch$:
 
 ```{r qc-pc-ses-models-setup, echo=FALSE}
 # Model including batch
