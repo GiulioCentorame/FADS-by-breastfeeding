@@ -1,3 +1,5 @@
+tempdir: /path/to/tempdir
+
 basket_path: /path/to/basket/folder
 
 basket_filename: ukbXXXXX

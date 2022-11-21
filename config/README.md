@@ -7,7 +7,7 @@ A description of every valid option in `config.yaml`.
 Temporary workflow directory (e.g., in the HPC scratch space). It will be linked to `../temp` by the workflow
 
 ``` yaml
-tempdir: /temp
+tempdir: /path/to/temp
 ```
 
 Path to the folder containing the UK Biobank basket.
