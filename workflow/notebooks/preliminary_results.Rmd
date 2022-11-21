@@ -1,7 +1,8 @@
 ---
 title: "Proxy GxE MR on breastfeeding and cognitive traits"
+date: "`r Sys.Date()`"
 output:
-  html_document:
+  rmdformats::downcute:
     toc: yes
     number_sections: yes
 bibliography: references.bib
@@ -20,9 +21,15 @@ library(forcats)
 data <- fread("../../temp/merged/data.tsv", stringsAsFactors = TRUE, na.strings = "")
 ```
 
+```{r basic-cleaning-data, echo=FALSE, warning=FALSE}
+data_clean <-
+  data %>%
+  mutate(batch = as_factor(batch))
+```
+
 # Introduction
 
-This RMarkdown document reports the preliminary results for the proxy gene-by-environment Mendelian randomisation of the influence of breastfeeding on educational attainment on the UK Biobank.
+This RMarkdown document reports the results of a proxy gene-by-environment Mendelian randomisation analysis of the influence of breastfeeding on educational attainment on the UK Biobank.
 
 We use a subsample of the UK Biobank, including participants with White British ancestry, no aneuploidy, no mismatch between reported gender and generically-derived sex, no high heterozigosity and SNP missingness, and who did not withdrew their consent in participating (N = 486,400).
 
@@ -30,7 +37,7 @@ To model the data, we use the following fields:
 
 -   Year of birth (field 34);
 
--   Sex (field 31 for self-reported sex, 22001 for genetically derived sex);
+-   Sex (field 31 for self-reported sex, 22001 for genetically-derived sex);
 
 -   Breastfed as a baby or not (field 1677);
 
@@ -70,21 +77,12 @@ To model the data, we use the following fields:
 
 # Preparing the data
 
--   **IQ**: To generate a simple measure of cognitive functions, we use the unweighted sum of correct answers to the fluid intelligence battery of questions, taking mean of the instances of when it was assessed;
-
-```{r cleaning-FI, echo=FALSE, warning=FALSE}
-data_clean <-
-  data %>%
-  # Generate variable for IQ based on the average score for FI
-  # HACK this assumes no habituation effect
-  mutate(FI_all = rowMeans(across(starts_with("FI")),
-                           na.rm = TRUE))
-```
+-   **IQ**: for now, we consider just the subsample of participants in the UK Biobank who have filled the fluid intelligence questionnaire online during the follow-up;
 
 -   **Educational attainment**: we derive a measure of educational attainment as the number of years of education required to attain the highest degree, according to their ICSED level @Carter2022;
 
     | Qualifications (as reported in UK Biobank)              |  ISCED   | Years of education |
-    |--------------------------------------------|:---------:|:----------------:|
+    |----------------------------------|:-----------------:|:-----------------:|
     | College or University degree                            |    5     |         20         |
     | NVQ or HND or HNC or equivalent                         |    5     |         19         |
     | Other professioal qualification e.g.: nursing, teaching |    4     |         15         |
@@ -120,6 +118,8 @@ data_clean <-
   mutate(years_of_schooling = replace(years_of_schooling, years_of_schooling == -Inf, NA)) %>%
   select(-starts_with("qualifications"))
 ```
+
+-   **Age**: we use the year of birth temporarily as a measure of age consistent across models;
 
 ```{r factor-levels-order, echo=FALSE}
 ## Reorder factors
@@ -173,8 +173,8 @@ table_lables <-
   list(variables = list(genetic_sex="Sex",
                         age="Year of birth",
                         breastfed_as_baby="Breastfed as a baby",
-                        FI_all = "FI score",
-                        years_of_schooling = "Years in education",
+                        FI_online = "FI score",
+                        years_of_schooling = "Years in full-time education",
                         Townsend_deprivation_index = "Townsend deprivation index"),
        groups = list("", "rs1535", "rs174575", "rs174583")
   )
@@ -187,7 +187,7 @@ table1(strata, table_lables, groupspan = c(1, 3, 3, 3), data = data_for_table)
 # TODO fix width with table1 %>% t1flex() %>% flextable::...
 ```
 
-# Modeling
+# Analysis
 
 For the purpose of modelling, we merge together nonresponders and participants who responded "Do not know" or "Prefer not to answer".
 
@@ -231,7 +231,7 @@ variants <- c("rs1535_A", "rs174575_C", "rs174583_C")
 
 ------------------------------------------------------------------------
 
-**NOTE:** the analysis includes complete cases only. The number of observations for each model varies according to the missingness in the predictor and outcome variables
+**NOTE:** the analysis includes complete cases only. The number of observations for each model can vary according to the missingness in the predictor and outcome variables
 
 ------------------------------------------------------------------------
 
@@ -247,10 +247,10 @@ corr_matrix <-
                                     "Breastfed" = 1,
                                     "Bottlefed" = 0,
                                     .default = NA_real_)) %>%
-  select(breastfed_as_baby, age, Townsend_deprivation_index, FI_all, rs1535_A, rs174575_C, rs174583_C, years_of_schooling, IMD_England) %>%
+  select(breastfed_as_baby, age, Townsend_deprivation_index, FI_online, rs1535_A, rs174575_C, rs174583_C, years_of_schooling, IMD_England) %>%
   rename(breastfed = breastfed_as_baby,
          TDI = Townsend_deprivation_index,
-         FI = FI_all,
+         FI = FI_online,
          rs1535 = rs1535_A,
          rs174575 = rs174575_C,
          rs174583 = rs174583_C) %>%
@@ -265,6 +265,190 @@ ggcorrplot::ggcorrplot(corr_matrix,
                        outline.color = "white")
 
 ```
+
+### Breastfeeding and IQ
+
+There is evidence from the previous literature that breastfeeding might be associated with IQ @Hartwig2019. To test this hypothesis, we fit $Y \sim breastfeeding + sex + age + TDI + \sum^{10}_{n=1}PC_{n}$ , where $breastfeeding$ is coded as the reference level:
+
+```{r breastfeeding-iq, echo = FALSE}
+
+formula_bf_iq_agesex <- formula(paste("FI_online ~ breastfed_as_baby + genetic_sex + age"))
+
+
+model_bf_iq_agesex <- 
+  data_for_models %>%
+  lm(formula_bf_iq_agesex, data =.)
+
+summary(model_bf_iq_agesex)
+```
+
+```{r breastfeeding-iq-tdi, echo = FALSE}
+
+formula_bf_iq_tdi <- formula(paste("FI_online ~ breastfed_as_baby + genetic_sex + age + Townsend_deprivation_index"))
+
+
+model_bf_iq_tdi <- 
+  data_for_models %>%
+  lm(formula_bf_iq_tdi, data =.)
+
+summary(model_bf_iq_tdi)
+```
+
+```{r breastfeeding-iq-pcs, echo = FALSE}
+
+formula_bf_iq_tdi_pcs <- formula(paste("FI_online ~ breastfed_as_baby + genetic_sex + age + Townsend_deprivation_index +",
+                             paste(paste0("principal_component_", 1:10),
+                                   collapse = " + ")
+                             ))
+
+
+model_bf_iq_tdi_pcs <- 
+  data_for_models %>%
+  lm(formula_bf_iq_tdi_pcs, data =.)
+
+summary(model_bf_iq_tdi_pcs)
+
+```
+
+```{r breastfeeding-ea-tdi, echo = FALSE}
+
+formula_bf_ea_tdi <- formula(paste("years_of_schooling ~ breastfed_as_baby + genetic_sex + age + Townsend_deprivation_index"))
+
+
+model_bf_ea_tdi <- 
+  data_for_models %>%
+  lm(formula_bf_ea_tdi, data =.)
+
+summary(model_bf_ea_tdi)
+```
+
+```{r breastfeeding-ea-tdi-pcs, echo = FALSE}
+
+formula_bf_ea_tdi_pcs <- formula(paste("years_of_schooling ~ breastfed_as_baby + genetic_sex + age + Townsend_deprivation_index +",
+                             paste(paste0("principal_component_", 1:10),
+                                   collapse = " + ")
+                             ))
+
+
+model_bf_ea_tdi_pcs <- 
+  data_for_models %>%
+  lm(formula_bf_ea_tdi_pcs, data =.)
+
+summary(model_bf_ea_tdi_pcs)
+
+```
+
+## FADS and breastfeeding
+
+We also want to check whether FADS and breastfeeding are associated. They should not, as the change in allele dosage should not be different between breastfed and bottlefed individuals.
+
+```{r breastfeeding-rs1535, echo=FALSE}
+
+breastfeeding_rs1535 <-
+  formula(paste("breastfed_as_baby ~ rs1535_A +",
+                             paste(paste0("principal_component_", 1:10),
+                                   collapse = " + ")
+                             ))
+
+data_for_models %>%
+  mutate(breastfed_as_baby = na_if(breastfed_as_baby, "Missing")) %>%
+  glm(breastfeeding_rs1535, family = binomial, data = .) %>%
+  summary()
+```
+
+```{r breastfeeding-rs174575, echo=FALSE}
+
+breastfeeding_rs174575 <-
+  formula(paste("breastfed_as_baby ~ rs174575_C +",
+                             paste(paste0("principal_component_", 1:10),
+                                   collapse = " + ")
+                             ))
+
+data_for_models %>%
+  mutate(breastfed_as_baby = na_if(breastfed_as_baby, "Missing")) %>%
+  glm(breastfeeding_rs174575, family = binomial, data = .) %>%
+  summary()
+```
+
+```{r breastfeeding-rs174583, echo=FALSE}
+
+breastfeeding_rs174583 <-
+  formula(paste("breastfed_as_baby ~ rs174583_C +",
+                             paste(paste0("principal_component_", 1:10),
+                                   collapse = " + ")
+                             ))
+
+data_for_models %>%
+  mutate(breastfed_as_baby = na_if(breastfed_as_baby, "Missing")) %>%
+  glm(breastfeeding_rs174583, family = binomial, data = .) %>%
+  summary()
+```
+
+## Replicating @Caspi2007's analysis
+
+We attempt to replicate the model shown in @Caspi2007 as closely as possible by fitting $Y \sim SNP + breasfeeding + SNP \times breastfeeding + SES$.
+
+Breastfeeding is coded once again as 1 = breastfed and 0 = bottlefed.
+
+```{r caspi-analysis-rs1535-no-agesex, echo=FALSE}
+
+model_caspi_rs1535_noagesex <- 
+  data_for_models %>%
+  mutate(breastfed_as_baby = na_if(breastfed_as_baby, "Missing"),
+         breastfed_as_baby = recode(breastfed_as_baby, "Breastfed" = 1,
+                      "Bottlefed" = 0)) %>%
+  lm(FI_online ~ rs1535_A + breastfed_as_baby + rs1535_A*breastfed_as_baby + Townsend_deprivation_index, data =.)
+
+summary(model_caspi_rs1535_noagesex)
+
+```
+
+```{r caspi-analysis-rs174575-no-agesex, echo=FALSE}
+
+model_caspi_rs174575_noagesex <- 
+  data_for_models %>%
+  mutate(breastfed_as_baby = na_if(breastfed_as_baby, "Missing"),
+         breastfed_as_baby = recode(breastfed_as_baby, "Breastfed" = 1,
+                      "Bottlefed" = 0)) %>%
+  lm(FI_online ~ rs174575_C + breastfed_as_baby + rs174575_C*breastfed_as_baby + Townsend_deprivation_index, data =.)
+
+summary(model_caspi_rs174575_noagesex)
+
+```
+
+@Caspi2007 's analysis was done using a single cohort with the same age and balanced for sex, so we also try to repeat the model adjusting for age and sex.
+
+```{r caspi-analysis-rs1535-agesex, echo=FALSE}
+
+model_caspi_rs1535_agesex <- 
+  data_for_models %>%
+  mutate(breastfed_as_baby = na_if(breastfed_as_baby, "Missing"),
+         breastfed_as_baby = recode(breastfed_as_baby, "Breastfed" = 1,
+                      "Bottlefed" = 0)) %>%
+  lm(FI_online ~ rs1535_A + breastfed_as_baby + rs1535_A*breastfed_as_baby + Townsend_deprivation_index + age + genetic_sex, data =.)
+
+summary(model_caspi_rs1535_agesex)
+```
+
+```{r caspi-analysis-rs174575-agesex, echo=FALSE}
+
+model_caspi_rs174575_agesex <- 
+  data_for_models %>%
+  mutate(breastfed_as_baby = na_if(breastfed_as_baby, "Missing"),
+         breastfed_as_baby = recode(breastfed_as_baby, "Breastfed" = 1,
+                      "Bottlefed" = 0)) %>%
+  lm(FI_online ~ rs174575_C + breastfed_as_baby + rs174575_C*breastfed_as_baby + Townsend_deprivation_index + age + genetic_sex, data =.)
+
+summary(model_caspi_rs174575_agesex)
+```
+
+There are a few important differences between UK Biobank and the studies in @Caspi2007 that might also explain the results:
+
+-   Standardised childhood IQ test (Dunedin and E-risk) vs unstandardised adult IQ test (UK Biobank);
+
+-   Measure of individual SES based on parental occupation (Dunedin) vs regional deprivation (UK Biobank);
+
+-   Cohort homogeneous for age and with repeated IQ measurements (Dunedin and E-risk) vs first-instance questions at different ages (UK Biobank).
 
 ## Simple model
 
@@ -290,13 +474,13 @@ simple_model <- function(data,
 
 ```{r simple-model-FI, echo=FALSE}
 # HACK using a loop does not print the table, so I need to call them manually
- simple_model(data_for_models, "FI_all", variants[1]) %>%
+ simple_model(data_for_models, "FI_online", variants[1]) %>%
   model_table()
 
- simple_model(data_for_models, "FI_all", variants[2]) %>%
+ simple_model(data_for_models, "FI_online", variants[2]) %>%
   model_table()
 
- simple_model(data_for_models, "FI_all", variants[3]) %>%
+ simple_model(data_for_models, "FI_online", variants[3]) %>%
   model_table()
 ```
 
@@ -312,7 +496,6 @@ simple_model <- function(data,
  simple_model(data_for_models, "years_of_schooling", variants[3]) %>%
   model_table()
 ```
-
 
 ## Age and sex as covariates
 
@@ -338,13 +521,13 @@ cov_model <- function(data,
 
 ```{r cov-model-FI, echo=FALSE}
 # HACK using a loop does not print the table, so I need to call them manually
- cov_model(data_for_models, "FI_all", variants[1]) %>%
+ cov_model(data_for_models, "FI_online", variants[1]) %>%
   model_table()
 
- cov_model(data_for_models, "FI_all", variants[2]) %>%
+ cov_model(data_for_models, "FI_online", variants[2]) %>%
   model_table()
 
- cov_model(data_for_models, "FI_all", variants[3]) %>%
+ cov_model(data_for_models, "FI_online", variants[3]) %>%
   model_table()
 ```
 
@@ -360,7 +543,6 @@ cov_model <- function(data,
  cov_model(data_for_models, "years_of_schooling", variants[3]) %>%
   model_table()
 ```
-
 
 ## Model including measures of socioeconomic status
 
@@ -385,13 +567,13 @@ ses_model <- function(data,
 ### Fluid intelligence
 
 ```{r ses-model-FI, echo=FALSE}
- ses_model(data_for_models, "FI_all", variants[1]) %>%
+ ses_model(data_for_models, "FI_online", variants[1]) %>%
   model_table()
 
- ses_model(data_for_models, "FI_all", variants[2]) %>%
+ ses_model(data_for_models, "FI_online", variants[2]) %>%
   model_table()
 
- ses_model(data_for_models, "FI_all", variants[3]) %>%
+ ses_model(data_for_models, "FI_online", variants[3]) %>%
   model_table()
 ```
 
@@ -433,13 +615,13 @@ pc_ses_model <- function(data,
 ### Fluid intelligence
 
 ```{r pc-ses-model-FI, echo=FALSE}
- pc_ses_model(data_for_models, "FI_all", variants[1]) %>%
+ pc_ses_model(data_for_models, "FI_online", variants[1]) %>%
   model_table()
 
- pc_ses_model(data_for_models, "FI_all", variants[2]) %>%
+ pc_ses_model(data_for_models, "FI_online", variants[2]) %>%
   model_table()
 
- pc_ses_model(data_for_models, "FI_all", variants[3]) %>%
+ pc_ses_model(data_for_models, "FI_online", variants[3]) %>%
   model_table()
 ```
 
@@ -479,26 +661,26 @@ qc_ses_model <- function(data,
 ### Fluid intelligence
 
 ```{r qc-ses-model-FI, echo=FALSE}
- qc_pc_ses_model(data_for_models, "FI_all", variants[1]) %>%
+ qc_ses_model(data_for_models, "FI_online", variants[1]) %>%
   model_table()
 
- qc_pc_ses_model(data_for_models, "FI_all", variants[2]) %>%
+ qc_ses_model(data_for_models, "FI_online", variants[2]) %>%
   model_table()
 
- qc_pc_ses_model(data_for_models, "FI_all", variants[3]) %>%
+ qc_ses_model(data_for_models, "FI_online", variants[3]) %>%
   model_table()
 ```
 
 ### Educational attainment
 
 ```{r qc-ses-model-EA, echo=FALSE}
- qc_pc_ses_model(data_for_models, "years_of_schooling", variants[1]) %>%
+ qc_ses_model(data_for_models, "years_of_schooling", variants[1]) %>%
   model_table()
 
- qc_pc_ses_model(data_for_models, "years_of_schooling", variants[2]) %>%
+ qc_ses_model(data_for_models, "years_of_schooling", variants[2]) %>%
   model_table()
 
- qc_pc_ses_model(data_for_models, "years_of_schooling", variants[3]) %>%
+ qc_ses_model(data_for_models, "years_of_schooling", variants[3]) %>%
   model_table()
 ```
 
