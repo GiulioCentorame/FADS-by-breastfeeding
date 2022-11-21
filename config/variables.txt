@@ -1,5 +1,5 @@
 ## Demographics
-# Age
+# Date of birth
 34
 # Reported sex
 31
@@ -9,9 +9,12 @@
 1677
 # Principal components
 22009
-# FI full score
+## Intelligence
+#FI full score
 20191
 20016
+# Age when completed FI test online
+20135
 ## Educational attainment
 # Age completed full time Education
 845
