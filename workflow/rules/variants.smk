@@ -25,3 +25,25 @@ rule extract_FADS_variants_allelic_dosage:
         --snps rs174575, rs1535, rs174583 \
         --out {params.output_prefix}
         """
+
+rule compute_FADS_variants_summary_stats:
+    input:
+        bgen = config.get("chromosome_11_bgen"),
+        bgi = f"{config.get('chromosome_11_bgen')}.bgi",
+    output:
+        snpstats = f"{TEMP_DIR}/variants/variants.snp-stats"
+    conda:
+        # TODO add qctool to bioconda
+        "../envs/bgenix.yaml"
+    threads: 36
+    shell:
+        """
+        bgenix \
+        -g {input.bgen} \
+        -incl-rsids rs174575,rs1535,rs174583 | \
+        qctool \
+        -g - \
+        -filetype bgen \
+        -snp-stats \
+        -osnp {output.snpstats}
+        """
