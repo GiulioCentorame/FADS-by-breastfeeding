@@ -1,5 +1,7 @@
 ## Demographics
-# Date of birth
+# Month of birth
+52
+# Year of birth
 34
 # Reported sex
 31
@@ -13,12 +15,14 @@
 #FI full score
 20191
 20016
-# Age when completed FI test online
+# Date when completed FI test online
 20135
+# Age when attended assessment centre
+21003
 ## Educational attainment
 # Age completed full time Education
 845
-# Qualifications
+# Qualifications (as of assessment centre)
 6138
 ## Townsend deprivation index
 189
