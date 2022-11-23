@@ -19,19 +19,52 @@ library(forcats)
 
 # Load data
 data <- fread("../../temp/merged/data.tsv", stringsAsFactors = TRUE, na.strings = "")
+
+unrelateds <- scan("../../temp/merged/unrelateds.txt")
+
 ```
 
 ```{r basic-cleaning-data, echo=FALSE, warning=FALSE}
 data_clean <-
   data %>%
-  mutate(batch = as_factor(batch))
+  rename(yob = age) %>%
+  filter(!(eid %in% unrelateds))
+
+rm(data)
+# fi_score_longer <-
+# data_clean %>%
+#   select(eid, starts_with("FI"), starts_with("date_FI")) %>%
+#   tidyr::pivot_longer(starts_with("FI"),
+#                       names_to = "FI_instance",
+#                       values_to = "FI_score") %>%
+#   tidyr::pivot_longer(starts_with("date_FI"),
+#                       names_to = "FI_instance",
+#                       values_to = "FI_date") %>%
+#   group_by(eid) %>%
+#   summarise(FI_score_first_instance = min(FI_date))
+#   
+
+# # spread, take first instance, then gather
+# for(n in nrow(data_clean)){
+#   if(!is.na(data_clean$FI_centre_0_[n])){
+#     data_clean$FI_combined[n] <- data_clean$FI_centre_0_[n]
+#   } else if (!is.na(data_clean$FI_centre_1_[n])){
+#     data_clean$FI_combined[n] <- data_clean$FI_centre_1_[n]
+#   } else if (!is.na(data_clean$FI_centre_2_[n])){
+#     data_clean$FI_combined[n] <- data_clean$FI_centre_2_[n]
+#   } else if (!is.na(data_clean$FI_centre_3_[n])){
+#     data_clean$FI_combined[n] <- data_clean$FI_centre_3_[n]
+#   } else {
+#     data_clean$FI_combined[n] <- data_clean$FI_online[n]
+#   }
+# }
 ```
 
 # Introduction
 
 This RMarkdown document reports the results of a proxy gene-by-environment Mendelian randomisation analysis of the influence of breastfeeding on educational attainment on the UK Biobank.
 
-We use a subsample of the UK Biobank, including participants with White British ancestry, no aneuploidy, no mismatch between reported gender and generically-derived sex, no high heterozigosity and SNP missingness, and who did not withdrew their consent in participating (N = 486,400).
+We use a subsample of the UK Biobank, including participants with White British ancestry, no aneuploidy, no mismatch between reported gender and generically-derived sex, no high heterozigosity and SNP missingness, and who did not withdrew their consent in participating, and without any known relatedness in the sample (N = 486,400).
 
 To model the data, we use the following fields:
 
@@ -171,7 +204,7 @@ data_for_table <-
 # Create table labels
 table_lables <- 
   list(variables = list(genetic_sex="Sex",
-                        age="Year of birth",
+                        yob="Year of birth",
                         breastfed_as_baby="Breastfed as a baby",
                         FI_online = "FI score",
                         years_of_schooling = "Years in full-time education",
@@ -185,6 +218,9 @@ strata <- c(list(Total=data_for_table),
 
 table1(strata, table_lables, groupspan = c(1, 3, 3, 3), data = data_for_table)
 # TODO fix width with table1 %>% t1flex() %>% flextable::...
+
+# Recover a bit of memory
+rm(strata, data_for_table)
 ```
 
 # Analysis
@@ -247,7 +283,7 @@ corr_matrix <-
                                     "Breastfed" = 1,
                                     "Bottlefed" = 0,
                                     .default = NA_real_)) %>%
-  select(breastfed_as_baby, age, Townsend_deprivation_index, FI_online, rs1535_A, rs174575_C, rs174583_C, years_of_schooling, IMD_England) %>%
+  select(breastfed_as_baby, yob, Townsend_deprivation_index, FI_online, rs1535_A, rs174575_C, rs174583_C, years_of_schooling, IMD_England) %>%
   rename(breastfed = breastfed_as_baby,
          TDI = Townsend_deprivation_index,
          FI = FI_online,
@@ -272,7 +308,7 @@ There is evidence from the previous literature that breastfeeding might be assoc
 
 ```{r breastfeeding-iq, echo = FALSE}
 
-formula_bf_iq_agesex <- formula(paste("FI_online ~ breastfed_as_baby + genetic_sex + age"))
+formula_bf_iq_agesex <- formula(paste("FI_online ~ breastfed_as_baby + genetic_sex + yob"))
 
 
 model_bf_iq_agesex <- 
@@ -284,7 +320,7 @@ summary(model_bf_iq_agesex)
 
 ```{r breastfeeding-iq-tdi, echo = FALSE}
 
-formula_bf_iq_tdi <- formula(paste("FI_online ~ breastfed_as_baby + genetic_sex + age + Townsend_deprivation_index"))
+formula_bf_iq_tdi <- formula(paste("FI_online ~ breastfed_as_baby + genetic_sex + yob + Townsend_deprivation_index"))
 
 
 model_bf_iq_tdi <- 
@@ -296,7 +332,7 @@ summary(model_bf_iq_tdi)
 
 ```{r breastfeeding-iq-pcs, echo = FALSE}
 
-formula_bf_iq_tdi_pcs <- formula(paste("FI_online ~ breastfed_as_baby + genetic_sex + age + Townsend_deprivation_index +",
+formula_bf_iq_tdi_pcs <- formula(paste("FI_online ~ breastfed_as_baby + genetic_sex + yob + Townsend_deprivation_index +",
                              paste(paste0("principal_component_", 1:10),
                                    collapse = " + ")
                              ))
@@ -312,7 +348,7 @@ summary(model_bf_iq_tdi_pcs)
 
 ```{r breastfeeding-ea-tdi, echo = FALSE}
 
-formula_bf_ea_tdi <- formula(paste("years_of_schooling ~ breastfed_as_baby + genetic_sex + age + Townsend_deprivation_index"))
+formula_bf_ea_tdi <- formula(paste("years_of_schooling ~ breastfed_as_baby + genetic_sex + yob + Townsend_deprivation_index"))
 
 
 model_bf_ea_tdi <- 
@@ -324,7 +360,7 @@ summary(model_bf_ea_tdi)
 
 ```{r breastfeeding-ea-tdi-pcs, echo = FALSE}
 
-formula_bf_ea_tdi_pcs <- formula(paste("years_of_schooling ~ breastfed_as_baby + genetic_sex + age + Townsend_deprivation_index +",
+formula_bf_ea_tdi_pcs <- formula(paste("years_of_schooling ~ breastfed_as_baby + genetic_sex + + Townsend_deprivation_index +",
                              paste(paste0("principal_component_", 1:10),
                                    collapse = " + ")
                              ))
@@ -425,7 +461,7 @@ model_caspi_rs1535_agesex <-
   mutate(breastfed_as_baby = na_if(breastfed_as_baby, "Missing"),
          breastfed_as_baby = recode(breastfed_as_baby, "Breastfed" = 1,
                       "Bottlefed" = 0)) %>%
-  lm(FI_online ~ rs1535_A + breastfed_as_baby + rs1535_A*breastfed_as_baby + Townsend_deprivation_index + age + genetic_sex, data =.)
+  lm(FI_online ~ rs1535_A + breastfed_as_baby + rs1535_A*breastfed_as_baby + Townsend_deprivation_index + yob + genetic_sex, data =.)
 
 summary(model_caspi_rs1535_agesex)
 ```
@@ -511,7 +547,7 @@ cov_model <- function(data,
          \(x) lm(formula(paste(outcome, 
                    "~",
                    SNP_name,
-                   "+ sex + age")),
+                   "+ sex + yob")),
              data = x)
   )
 }
@@ -558,7 +594,7 @@ ses_model <- function(data,
          \(x) lm(formula(paste(outcome, 
                    "~",
                    SNP_name,
-                   "+ sex + age + Townsend_deprivation_index")),
+                   "+ sex + yob + Townsend_deprivation_index")),
              data = x)
   )
 }
@@ -604,7 +640,7 @@ pc_ses_model <- function(data,
          \(x) lm(formula(paste(outcome, 
                    "~",
                    SNP_name,
-                   "+ sex + age + ",
+                   "+ sex + yob + ",
                    paste(paste0("principal_component_", 1:10),
                          collapse = " + "))),
              data = x)
@@ -652,7 +688,7 @@ qc_ses_model <- function(data,
          \(x) lm(formula(paste(outcome, 
                    "~",
                    SNP_name,
-                   "+ sex + age + Townsend_deprivation_index + batch")),
+                   "+ sex + yob + Townsend_deprivation_index + batch")),
              data = x)
   )
 }
