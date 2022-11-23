@@ -3,7 +3,6 @@ title: "Proxy GxE MR on breastfeeding and cognitive traits"
 date: "`r Sys.Date()`"
 output:
   rmdformats::downcute:
-    toc: yes
     number_sections: yes
 bibliography: references.bib
 ---
@@ -16,6 +15,8 @@ library(table1)
 library(dplyr)
 library(modelsummary)
 library(forcats)
+library(lubridate)
+library(forestplot)
 
 # Load data
 data <- fread("../../temp/merged/data.tsv", stringsAsFactors = TRUE, na.strings = "")
@@ -27,37 +28,84 @@ unrelateds <- scan("../../temp/merged/unrelateds.txt")
 ```{r basic-cleaning-data, echo=FALSE, warning=FALSE}
 data_clean <-
   data %>%
-  rename(yob = age) %>%
-  filter(!(eid %in% unrelateds))
+  rename(yob = age,
+         mob = `52.0.0`,
+         date_FI_online = `20135.0.0`) %>%
+  rename_with(~gsub("21003", "age_FI_ac", .x, fixed = TRUE),
+              .cols = starts_with("21003")) %>%
+  mutate(date_of_birth = ym(paste(yob, mob)),
+            date_FI_online = ymd_hms(date_FI_online),
+            # NOTE the following works just by sorcery alone--don't understand the logic
+         FI_age_online = interval(start = date_of_birth, 
+                                  end = date_FI_online)/years(1)) %>%
+# remove unrelated individuals
+  filter(!(eid %in% unrelateds)) %>%
+  select(-c("mob", "date_FI_online", "date_of_birth"))
 
 rm(data)
-# fi_score_longer <-
-# data_clean %>%
-#   select(eid, starts_with("FI"), starts_with("date_FI")) %>%
-#   tidyr::pivot_longer(starts_with("FI"),
-#                       names_to = "FI_instance",
-#                       values_to = "FI_score") %>%
-#   tidyr::pivot_longer(starts_with("date_FI"),
-#                       names_to = "FI_instance",
-#                       values_to = "FI_date") %>%
-#   group_by(eid) %>%
-#   summarise(FI_score_first_instance = min(FI_date))
-#   
 
-# # spread, take first instance, then gather
-# for(n in nrow(data_clean)){
-#   if(!is.na(data_clean$FI_centre_0_[n])){
-#     data_clean$FI_combined[n] <- data_clean$FI_centre_0_[n]
-#   } else if (!is.na(data_clean$FI_centre_1_[n])){
-#     data_clean$FI_combined[n] <- data_clean$FI_centre_1_[n]
-#   } else if (!is.na(data_clean$FI_centre_2_[n])){
-#     data_clean$FI_combined[n] <- data_clean$FI_centre_2_[n]
-#   } else if (!is.na(data_clean$FI_centre_3_[n])){
-#     data_clean$FI_combined[n] <- data_clean$FI_centre_3_[n]
-#   } else {
-#     data_clean$FI_combined[n] <- data_clean$FI_online[n]
-#   }
-# }
+# FIXME something is generating too many NAs!
+# NOTE FI_age_ac is a misnomer, the age is for when attended assessment
+# centre. I correct it midway through but this whole code should be
+# restructured
+fi_score_long <-
+  data_clean %>%
+  select(eid, starts_with("FI_centre")) %>%
+  tidyr::pivot_longer(cols = starts_with("FI_centre"),
+                      names_to = "FI_centre_instance",
+                      values_to = "FI_score")
+
+fi_age_long <- 
+   data_clean %>%
+   select(eid, starts_with("age_FI_ac")) %>%
+   tidyr::pivot_longer(starts_with("age_FI_ac"),
+                       names_to = "FI_centre_instance",
+                       values_to = "FI_age_ac") %>%
+   mutate(FI_centre_instance = case_when(
+     FI_centre_instance == "age_FI_ac.0.0" ~ "FI_centre_0_",
+     FI_centre_instance == "age_FI_ac.1.0" ~ "FI_centre_1_",
+     FI_centre_instance == "age_FI_ac.2.0" ~ "FI_centre_2_",
+     FI_centre_instance == "age_FI_ac.3.0" ~ "FI_centre_3_",
+                                  )) 
+# get table with age at each instance and fi
+fi_ac <-
+full_join(fi_score_long, fi_age_long, by = c("eid", "FI_centre_instance")) %>%
+  # Make NA where no info on FI for that instance
+  mutate(FI_age_ac = case_when(
+    is.na(FI_score) ~ NA_real_,
+    !is.na(FI_score) ~ as.double(FI_age_ac))) %>%
+  group_by(eid) %>%
+  slice_min(order_by = FI_age_ac, with_ties = FALSE) %>%
+  ungroup() %>%
+  rename(FI_ac_score = FI_score)
+
+data_clean <-
+  full_join(fi_ac, data_clean, by = "eid") %>%
+  # Take first instance (= youngest)
+  mutate(
+    FI_all = case_when(
+      FI_age_ac > FI_age_online ~ as.integer(FI_online),
+      FI_age_ac < FI_age_online ~ as.integer(FI_ac_score),
+      FI_age_ac == FI_age_online ~ as.integer(FI_ac_score),
+      TRUE ~ NA_integer_
+      ),
+    # Take the earliest instance of age (same principle)
+    # rounding the age in both to keep it consistent
+    age_at_FI_assessment = case_when(
+      FI_age_ac > FI_age_online ~ as.integer(round(FI_age_online)),
+      FI_age_ac < FI_age_online ~ as.integer(round(FI_age_ac)),
+      FI_age_ac == FI_age_online ~ as.integer(round(FI_age_ac)),
+
+      TRUE ~ NA_integer_
+      ),
+    # Finally, create a factor for which score of intelligence has been used
+    # according to the same rules
+    FI_scale = case_when(
+      FI_age_ac > FI_age_online ~ "Online",
+      FI_age_ac < FI_age_online ~ "Assessment centre",
+      TRUE ~ NA_character_
+      )
+    )
 ```
 
 # Introduction
@@ -110,12 +158,14 @@ To model the data, we use the following fields:
 
 # Preparing the data
 
--   **IQ**: for now, we consider just the subsample of participants in the UK Biobank who have filled the fluid intelligence questionnaire online during the follow-up;
+-   **IQ**: we used the earliest available instance for either the online questionnaire or the assessment centre score, using age at completion and which scale is it coming from as a covariate; we expect the variable on the scale of origin to have an approximate effect of 1 (the online questionnaire had a question more in the assessment);
+
+-   ***Breastfeeding***: coded as the reported breastfeeding status at the first instance;
 
 -   **Educational attainment**: we derive a measure of educational attainment as the number of years of education required to attain the highest degree, according to their ICSED level @Carter2022;
 
     | Qualifications (as reported in UK Biobank)              |  ISCED   | Years of education |
-    |----------------------------------|:-----------------:|:-----------------:|
+    |---------------------------------------------------------|:--------:|:------------------:|
     | College or University degree                            |    5     |         20         |
     | NVQ or HND or HNC or equivalent                         |    5     |         19         |
     | Other professioal qualification e.g.: nursing, teaching |    4     |         15         |
@@ -152,7 +202,7 @@ data_clean <-
   select(-starts_with("qualifications"))
 ```
 
--   **Age**: we use the year of birth temporarily as a measure of age consistent across models;
+-   **Age**: we use the year of birth for educational attainment, or age at completion for the IQ score;
 
 ```{r factor-levels-order, echo=FALSE}
 ## Reorder factors
@@ -206,7 +256,10 @@ table_lables <-
   list(variables = list(genetic_sex="Sex",
                         yob="Year of birth",
                         breastfed_as_baby="Breastfed as a baby",
-                        FI_online = "FI score",
+                        FI_ac_score = "FI score (assessment centre)",
+                        FI_online = "FI score (online follow-up)",
+                        FI_all = "FI score (first available instance from any source)",
+                        age_at_FI_assessment = "Age at first available instance for FI)",
                         years_of_schooling = "Years in full-time education",
                         Townsend_deprivation_index = "Townsend deprivation index"),
        groups = list("", "rs1535", "rs174575", "rs174583")
@@ -283,10 +336,15 @@ corr_matrix <-
                                     "Breastfed" = 1,
                                     "Bottlefed" = 0,
                                     .default = NA_real_)) %>%
-  select(breastfed_as_baby, yob, Townsend_deprivation_index, FI_online, rs1535_A, rs174575_C, rs174583_C, years_of_schooling, IMD_England) %>%
+  select(breastfed_as_baby, yob, Townsend_deprivation_index, FI_all, FI_age_ac, FI_age_online, FI_ac_score, FI_online, rs1535_A, rs174575_C, rs174583_C, years_of_schooling, IMD_England, age_at_FI_assessment) %>%
   rename(breastfed = breastfed_as_baby,
          TDI = Townsend_deprivation_index,
-         FI = FI_online,
+         FI_all_instances = FI_all,
+         Age_at_FI_assessment_centre = FI_age_ac,
+         Age_at_FI_online = FI_age_online,
+         FI_assessment_centre = FI_ac_score,
+         FI_online = FI_online,
+         year_of_birth = yob,
          rs1535 = rs1535_A,
          rs174575 = rs174575_C,
          rs174583 = rs174583_C) %>%
@@ -297,7 +355,7 @@ ggcorrplot::ggcorrplot(corr_matrix,
                        hc.order = TRUE,
                        type = "lower",
                        lab = TRUE,
-                       lab_size = 3,
+                       lab_size = 2,
                        outline.color = "white")
 
 ```
@@ -308,7 +366,7 @@ There is evidence from the previous literature that breastfeeding might be assoc
 
 ```{r breastfeeding-iq, echo = FALSE}
 
-formula_bf_iq_agesex <- formula(paste("FI_online ~ breastfed_as_baby + genetic_sex + yob"))
+formula_bf_iq_agesex <- formula(paste("FI_all ~ breastfed_as_baby + sex + age_at_FI_assessment + FI_scale"))
 
 
 model_bf_iq_agesex <- 
@@ -320,7 +378,7 @@ summary(model_bf_iq_agesex)
 
 ```{r breastfeeding-iq-tdi, echo = FALSE}
 
-formula_bf_iq_tdi <- formula(paste("FI_online ~ breastfed_as_baby + genetic_sex + yob + Townsend_deprivation_index"))
+formula_bf_iq_tdi <- formula(paste("FI_all ~ breastfed_as_baby + sex + age_at_FI_assessment + Townsend_deprivation_index"))
 
 
 model_bf_iq_tdi <- 
@@ -332,7 +390,7 @@ summary(model_bf_iq_tdi)
 
 ```{r breastfeeding-iq-pcs, echo = FALSE}
 
-formula_bf_iq_tdi_pcs <- formula(paste("FI_online ~ breastfed_as_baby + genetic_sex + yob + Townsend_deprivation_index +",
+formula_bf_iq_tdi_pcs <- formula(paste("FI_all ~ breastfed_as_baby + sex + age_at_FI_assessment + Townsend_deprivation_index +",
                              paste(paste0("principal_component_", 1:10),
                                    collapse = " + ")
                              ))
@@ -348,7 +406,7 @@ summary(model_bf_iq_tdi_pcs)
 
 ```{r breastfeeding-ea-tdi, echo = FALSE}
 
-formula_bf_ea_tdi <- formula(paste("years_of_schooling ~ breastfed_as_baby + genetic_sex + yob + Townsend_deprivation_index"))
+formula_bf_ea_tdi <- formula(paste("years_of_schooling ~ breastfed_as_baby + sex + yob + Townsend_deprivation_index"))
 
 
 model_bf_ea_tdi <- 
@@ -360,7 +418,7 @@ summary(model_bf_ea_tdi)
 
 ```{r breastfeeding-ea-tdi-pcs, echo = FALSE}
 
-formula_bf_ea_tdi_pcs <- formula(paste("years_of_schooling ~ breastfed_as_baby + genetic_sex + + Townsend_deprivation_index +",
+formula_bf_ea_tdi_pcs <- formula(paste("years_of_schooling ~ breastfed_as_baby + sex + yob + Townsend_deprivation_index +",
                              paste(paste0("principal_component_", 1:10),
                                    collapse = " + ")
                              ))
@@ -433,7 +491,7 @@ model_caspi_rs1535_noagesex <-
   mutate(breastfed_as_baby = na_if(breastfed_as_baby, "Missing"),
          breastfed_as_baby = recode(breastfed_as_baby, "Breastfed" = 1,
                       "Bottlefed" = 0)) %>%
-  lm(FI_online ~ rs1535_A + breastfed_as_baby + rs1535_A*breastfed_as_baby + Townsend_deprivation_index, data =.)
+  lm(FI_all ~ rs1535_A + breastfed_as_baby + rs1535_A*breastfed_as_baby + Townsend_deprivation_index + FI_scale + age_at_FI_assessment, data =.)
 
 summary(model_caspi_rs1535_noagesex)
 
@@ -446,7 +504,7 @@ model_caspi_rs174575_noagesex <-
   mutate(breastfed_as_baby = na_if(breastfed_as_baby, "Missing"),
          breastfed_as_baby = recode(breastfed_as_baby, "Breastfed" = 1,
                       "Bottlefed" = 0)) %>%
-  lm(FI_online ~ rs174575_C + breastfed_as_baby + rs174575_C*breastfed_as_baby + Townsend_deprivation_index, data =.)
+  lm(FI_all ~ rs174575_C + breastfed_as_baby + rs174575_C*breastfed_as_baby + Townsend_deprivation_index + FI_scale + age_at_FI_assessment, data =.)
 
 summary(model_caspi_rs174575_noagesex)
 
@@ -461,7 +519,7 @@ model_caspi_rs1535_agesex <-
   mutate(breastfed_as_baby = na_if(breastfed_as_baby, "Missing"),
          breastfed_as_baby = recode(breastfed_as_baby, "Breastfed" = 1,
                       "Bottlefed" = 0)) %>%
-  lm(FI_online ~ rs1535_A + breastfed_as_baby + rs1535_A*breastfed_as_baby + Townsend_deprivation_index + yob + genetic_sex, data =.)
+  lm(FI_all ~ rs1535_A + breastfed_as_baby + rs1535_A*breastfed_as_baby + Townsend_deprivation_index + sex + yob, data =.)
 
 summary(model_caspi_rs1535_agesex)
 ```
@@ -473,7 +531,7 @@ model_caspi_rs174575_agesex <-
   mutate(breastfed_as_baby = na_if(breastfed_as_baby, "Missing"),
          breastfed_as_baby = recode(breastfed_as_baby, "Breastfed" = 1,
                       "Bottlefed" = 0)) %>%
-  lm(FI_online ~ rs174575_C + breastfed_as_baby + rs174575_C*breastfed_as_baby + Townsend_deprivation_index + age + genetic_sex, data =.)
+  lm(FI_online ~ rs174575_C + breastfed_as_baby + rs174575_C*breastfed_as_baby + Townsend_deprivation_index + sex + yob, data =.)
 
 summary(model_caspi_rs174575_agesex)
 ```
@@ -486,14 +544,28 @@ There are a few important differences between UK Biobank and the studies in @Cas
 
 -   Cohort homogeneous for age and with repeated IQ measurements (Dunedin and E-risk) vs first-instance questions at different ages (UK Biobank).
 
-## Simple model
+## SNP association model with no covariates
 
 In the simplest case, we fit $Y \sim SNP$:
 
 ```{r simple-models-setup, echo=FALSE}
 # Simple model with no interactions: outcome ~ SNP
 # Returns a list of lm() objects
-simple_model <- function(data,
+simple_model_fi <- function(data,
+                         outcome, # Name of the outcome variable
+                         SNP_name){ # SNP name in the form rsid_ea
+  lapply(split(data, data$breastfed_as_baby),
+         \(x) lm(formula(paste(outcome, 
+                   "~",
+                   SNP_name,
+                   "+ FI_scale")),
+             data = x) %>%
+           broom::tidy()
+  ) %>%
+    bind_rows(.id = "stratum")
+}
+
+simple_model_ea <- function(data,
                          outcome, # Name of the outcome variable
                          SNP_name){ # SNP name in the form rsid_ea
   lapply(split(data, data$breastfed_as_baby),
@@ -501,36 +573,65 @@ simple_model <- function(data,
                    "~",
                    SNP_name,
                    "")),
-             data = x)
-  )
+             data = x) %>%
+           broom::tidy()
+  ) %>%
+    bind_rows(.id = "stratum")
 }
+```
+
+```{r forest-plot, echo=FALSE}
+draw_forest_plot <- function(model_table){
+ model_table %>%
+  filter(!(term == "(Intercept)")) %>%
+  mutate(
+    mean = estimate,
+         lower= estimate-(1.96*std.error),
+         upper= estimate+(1.96*std.error)) %>%
+  select(stratum, term, mean, std.error, lower, upper, p.value) %>%
+ group_by(stratum) %>%
+  forestplot(
+    labeltext = term,
+    boxsize = .1,
+    grid = TRUE,
+    ci.vertices = TRUE,
+    ci.vertices.height = 0.05,
+  ) %>%
+  fp_add_lines("steelblue") %>%
+  fp_add_header("Estimate") %>%
+  fp_set_style(box = c("darkblue", "darkred", "black") %>% lapply(function(x) gpar(fill = x, col = "#555555")),
+               line = c("darkblue", "darkred", "black"),
+               default = gpar(vertices = TRUE)) %>%
+    fp_set_zebra_style("#EFEFEF")
+}
+
 ```
 
 ### Fluid intelligence
 
 ```{r simple-model-FI, echo=FALSE}
 # HACK using a loop does not print the table, so I need to call them manually
- simple_model(data_for_models, "FI_online", variants[1]) %>%
-  model_table()
+ simple_model_fi(data_for_models, "FI_all", variants[1]) %>%
+  draw_forest_plot()
 
- simple_model(data_for_models, "FI_online", variants[2]) %>%
-  model_table()
+ simple_model_fi(data_for_models, "FI_all", variants[2]) %>%
+  draw_forest_plot()
 
- simple_model(data_for_models, "FI_online", variants[3]) %>%
-  model_table()
+ simple_model_fi(data_for_models, "FI_all", variants[3]) %>%
+  draw_forest_plot()
 ```
 
 ### Educational attainment
 
 ```{r simple-model-EA, echo=FALSE}
- simple_model(data_for_models, "years_of_schooling", variants[1]) %>%
-  model_table()
+ simple_model_ea(data_for_models, "years_of_schooling", variants[1]) %>%
+  draw_forest_plot()
 
- simple_model(data_for_models, "years_of_schooling", variants[2]) %>%
-  model_table()
+ simple_model_ea(data_for_models, "years_of_schooling", variants[2]) %>%
+  draw_forest_plot()
 
- simple_model(data_for_models, "years_of_schooling", variants[3]) %>%
-  model_table()
+ simple_model_ea(data_for_models, "years_of_schooling", variants[3]) %>%
+  draw_forest_plot()
 ```
 
 ## Age and sex as covariates
@@ -540,6 +641,7 @@ $Y \sim SNP + age + sex$:
 ```{r cov-models-setup, echo=FALSE}
 # Model with some covariates: outcome ~ SNP + sex + age
 # Returns a list of lm() objects
+
 cov_model <- function(data,
                          outcome, # Name of the outcome variable
                          SNP_name){ # SNP name in the form rsid_ea
@@ -547,9 +649,38 @@ cov_model <- function(data,
          \(x) lm(formula(paste(outcome, 
                    "~",
                    SNP_name,
-                   "+ sex + yob")),
-             data = x)
+                   "+ sex + age_at_FI_assessment + FI_scale")),
+             data = x) 
   )
+}
+
+cov_model_fi <- function(data,
+                         outcome, # Name of the outcome variable
+                         SNP_name){ # SNP name in the form rsid_ea
+  lapply(split(data, data$breastfed_as_baby),
+         \(x) lm(formula(paste(outcome, 
+                   "~",
+                   SNP_name,
+                   "+ sex + age_at_FI_assessment + FI_scale")),
+             data = x) %>%
+           broom::tidy()
+  ) %>%
+    bind_rows(.id = "stratum")
+}
+
+
+cov_model_ea <- function(data,
+                         outcome, # Name of the outcome variable
+                         SNP_name){ # SNP name in the form rsid_ea
+  lapply(split(data, data$breastfed_as_baby),
+         \(x) lm(formula(paste(outcome, 
+                   "~",
+                   SNP_name,
+                   "+ sex + yob")),
+             data = x) %>%
+           broom::tidy()
+  ) %>%
+    bind_rows(.id = "stratum")
 }
 ```
 
@@ -557,83 +688,53 @@ cov_model <- function(data,
 
 ```{r cov-model-FI, echo=FALSE}
 # HACK using a loop does not print the table, so I need to call them manually
- cov_model(data_for_models, "FI_online", variants[1]) %>%
-  model_table()
+ cov_model_fi(data_for_models, "FI_all", variants[1]) %>%
+  draw_forest_plot()
 
- cov_model(data_for_models, "FI_online", variants[2]) %>%
-  model_table()
+ cov_model_fi(data_for_models, "FI_all", variants[2]) %>%
+  draw_forest_plot()
 
- cov_model(data_for_models, "FI_online", variants[3]) %>%
-  model_table()
+ cov_model_fi(data_for_models, "FI_all", variants[3]) %>%
+  draw_forest_plot()
 ```
 
 ### Educational attainment
 
 ```{r cov-model-EA, echo=FALSE}
- cov_model(data_for_models, "years_of_schooling", variants[1]) %>%
-  model_table()
+ cov_model_ea(data_for_models, "years_of_schooling", variants[1]) %>%
+  draw_forest_plot()
 
- cov_model(data_for_models, "years_of_schooling", variants[2]) %>%
-  model_table()
+ cov_model_ea(data_for_models, "years_of_schooling", variants[2]) %>%
+  draw_forest_plot()
 
- cov_model(data_for_models, "years_of_schooling", variants[3]) %>%
-  model_table()
-```
-
-## Model including measures of socioeconomic status
-
-Modelled as $Y \sim SNP + age + sex + SES$, similar to @Caspi2007 (without interaction term)
-
-```{r ses-models-setup, echo=FALSE}
-# Model including the TDI as a measure of deprivation
-# Returns a list of lm() objects
-ses_model <- function(data,
-                         outcome, # Name of the outcome variable
-                         SNP_name){ # SNP name in the form rsid_ea
-  lapply(split(data, data$breastfed_as_baby),
-         \(x) lm(formula(paste(outcome, 
-                   "~",
-                   SNP_name,
-                   "+ sex + yob + Townsend_deprivation_index")),
-             data = x)
-  )
-}
-```
-
-### Fluid intelligence
-
-```{r ses-model-FI, echo=FALSE}
- ses_model(data_for_models, "FI_online", variants[1]) %>%
-  model_table()
-
- ses_model(data_for_models, "FI_online", variants[2]) %>%
-  model_table()
-
- ses_model(data_for_models, "FI_online", variants[3]) %>%
-  model_table()
-```
-
-### Educational attainment
-
-```{r ses-model-EA, echo=FALSE}
- ses_model(data_for_models, "years_of_schooling", variants[1]) %>%
-  model_table()
-
- ses_model(data_for_models, "years_of_schooling", variants[2]) %>%
-  model_table()
-
- ses_model(data_for_models, "years_of_schooling", variants[3]) %>%
-  model_table()
+ cov_model_ea(data_for_models, "years_of_schooling", variants[3]) %>%
+  draw_forest_plot()
 ```
 
 ## Principal components models
 
 Modelled as $Y \sim SNP + sex + age + \sum^{10}_{n=1}PC_{n}$:
 
-```{r pc-ses-models-setup, echo=FALSE}
-# Model including both SES and the first 10 PCs
+```{r pc-models-setup, echo=FALSE}
+# Model including first 10 PCs
 # Returns a list of lm() objects
-pc_ses_model <- function(data,
+pc_model_fi <- function(data,
+                         outcome, # Name of the outcome variable
+                         SNP_name){ # SNP name in the form rsid_ea
+  lapply(split(data, data$breastfed_as_baby),
+         \(x) lm(formula(paste(outcome, 
+                   "~",
+                   SNP_name,
+                   "+ sex + age_at_FI_assessment + FI_scale + ",
+                   paste(paste0("principal_component_", 1:10),
+                         collapse = " + "))),
+             data = x) %>%
+           broom::tidy()
+  ) %>%
+    bind_rows(.id = "stratum")
+}
+
+pc_model_ea <- function(data,
                          outcome, # Name of the outcome variable
                          SNP_name){ # SNP name in the form rsid_ea
   lapply(split(data, data$breastfed_as_baby),
@@ -643,81 +744,38 @@ pc_ses_model <- function(data,
                    "+ sex + yob + ",
                    paste(paste0("principal_component_", 1:10),
                          collapse = " + "))),
-             data = x)
-  )
+             data = x) %>%
+           broom::tidy()
+  ) %>%
+    bind_rows(.id = "stratum")
 }
+
 ```
 
 ### Fluid intelligence
 
 ```{r pc-ses-model-FI, echo=FALSE}
- pc_ses_model(data_for_models, "FI_online", variants[1]) %>%
-  model_table()
+ pc_model_fi(data_for_models, "FI_all", variants[1]) %>%
+  draw_forest_plot()
 
- pc_ses_model(data_for_models, "FI_online", variants[2]) %>%
-  model_table()
+ pc_model_fi(data_for_models, "FI_all", variants[2]) %>%
+  draw_forest_plot()
 
- pc_ses_model(data_for_models, "FI_online", variants[3]) %>%
-  model_table()
+ pc_model_fi(data_for_models, "FI_all", variants[3]) %>%
+  draw_forest_plot()
 ```
 
 ### Educational attainment
 
 ```{r pc-ses-model-EA, echo=FALSE}
- pc_ses_model(data_for_models, "years_of_schooling", variants[1]) %>%
-  model_table()
+ pc_model_ea(data_for_models, "years_of_schooling", variants[1]) %>%
+  draw_forest_plot()
 
- pc_ses_model(data_for_models, "years_of_schooling", variants[2]) %>%
-  model_table()
+ pc_model_ea(data_for_models, "years_of_schooling", variants[2]) %>%
+  draw_forest_plot()
 
- pc_ses_model(data_for_models, "years_of_schooling", variants[3]) %>%
-  model_table()
-```
-
-## Genetic QC effect models
-
-Modelled as $Y \sim SNP + sex + age + batch$:
-
-```{r qc-pc-ses-models-setup, echo=FALSE}
-# Model including batch
-# Returns a list of lm() objects
-qc_ses_model <- function(data,
-                         outcome, # Name of the outcome variable
-                         SNP_name){ # SNP name in the form rsid_ea
-  lapply(split(data, data$breastfed_as_baby),
-         \(x) lm(formula(paste(outcome, 
-                   "~",
-                   SNP_name,
-                   "+ sex + yob + Townsend_deprivation_index + batch")),
-             data = x)
-  )
-}
-```
-
-### Fluid intelligence
-
-```{r qc-ses-model-FI, echo=FALSE}
- qc_ses_model(data_for_models, "FI_online", variants[1]) %>%
-  model_table()
-
- qc_ses_model(data_for_models, "FI_online", variants[2]) %>%
-  model_table()
-
- qc_ses_model(data_for_models, "FI_online", variants[3]) %>%
-  model_table()
-```
-
-### Educational attainment
-
-```{r qc-ses-model-EA, echo=FALSE}
- qc_ses_model(data_for_models, "years_of_schooling", variants[1]) %>%
-  model_table()
-
- qc_ses_model(data_for_models, "years_of_schooling", variants[2]) %>%
-  model_table()
-
- qc_ses_model(data_for_models, "years_of_schooling", variants[3]) %>%
-  model_table()
+ pc_model_ea(data_for_models, "years_of_schooling", variants[3]) %>%
+  draw_forest_plot()
 ```
 
 # References
