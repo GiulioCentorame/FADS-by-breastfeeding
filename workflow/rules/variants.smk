@@ -34,7 +34,7 @@ rule compute_FADS_variants_summary_stats:
         snpstats = f"{TEMP_DIR}/variants/variants.snp-stats"
     conda:
         # TODO add qctool to bioconda
-        "../envs/bgenix.yaml"
+        "../envs/snpstats.yaml"
     threads: 36
     shell:
         """
