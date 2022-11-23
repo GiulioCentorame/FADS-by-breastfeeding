@@ -40,7 +40,7 @@ rule compute_FADS_variants_summary_stats:
         """
         bgenix \
         -g {input.bgen} \
-        -incl-rsids rs174575,rs1535,rs174583 | \
+        -incl-rsids rs174575 rs1535 rs174583 | \
         qctool \
         -g - \
         -filetype bgen \
