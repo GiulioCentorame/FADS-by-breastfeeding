@@ -6,31 +6,28 @@ rule strip_comments:
     shell:
         "grep -v '#' {input} > {output}"
 
-rule extract_phenotype_variables:
+rule extract_phenotypes_variables:
     # Extract the variables of interest in the UKB
     input:
         tab_files = expand(f"{config.get('basket_path')}/{{filename}}.tab",
                            filename = config.get("basket_filename")),
-        list_phenotypes = f"{TEMP_DIR}/phenotypes/phenotypes.txt"
+        html_files = expand(f"{config.get('basket_path')}/{{filename}}.html",
+                           filename = config.get("basket_filename")),
+        R_files = expand(f"{config.get('basket_path')}/{{filename}}.r",
+                           filename = config.get("basket_filename")),
+        phenotypes = f"{TEMP_DIR}/phenotypes/phenotypes.txt"
     output:
-        f"{TEMP_DIR}/phenotypes/phenotypes_raw.tsv"
-    threads: 16
+        f"{TEMP_DIR}/phenotypes/ukb_parquet/{{parquet_names}}.parquet"
+    threads: 96
+    params:
+        output_path= f"{TEMP_DIR}/phenotypes/ukb_parquet/"
     resources:
-        mem_mb=10000,
+        mem_mb=100000,
         time_min=400
-    conda:
-        "../envs/fmrib-unpack.yaml"
-    log:
-        "logs/extract_phenotype_variables.log"
-    shell:
-        """
-        fmrib_unpack \
-        --variable {input.list_phenotypes}\
-        {output} \
-        {input.tab_files}
-        """
+    script:
+        "../scripts/convert_basket.R"
 
-rule clean_phenotypes:
+rule select_and_clean_phenotypes:
     input:
         data = f"{TEMP_DIR}/phenotypes/phenotypes_raw.tsv",
         derived_script = "workflow/scripts/levels.R",

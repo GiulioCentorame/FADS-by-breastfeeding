@@ -1,22 +1,39 @@
+# HACK use conda env when this gets fixed: https://github.com/conda-forge/r-arrow-feedstock/issues/56
+renv::activate()
 library(ukbtools)
+library(arrow)
+library(dplyr)
 
-extract_ukb <- function(data_path, filename, output) {
+extract_ukb <- function(basket_path,
+                        phenotypes_file,
+                        basket_names,
+                        output_file_path) {
   # Load UKB data
 
-  full_ukb <- ukb_df(
-    filename,
-    path = data_path,
-    # Without this option it will take ages
-    n_threads = "max"
-  )
+  phenotypes <- scan(phenotypes_file)
 
-  # Save object
-  base::save(full_ukb, file = output)
+  for (basket in basket_names) {
+    ukb_data[[basket]] <-
+      ukb_df(basket,
+        path = basket_path,
+        n_threads = "max"
+      )
+  }
+
+  purrr::reduce(ukb_data,
+    full_join,
+    by = "eid"
+  ) %>%
+    arrow::write_dataset(
+      dataset = .,
+      path = output_path
+    )
 }
 
 # Run
 extract_ukb(
-  data_path = snakemake@config$basket_path,
-  filename = snakemake@config$basket_filename,
-  output = snakemake@output$output
+  basket_path = snakemake@config$basket_path,
+  basket_names = snakemake@config$basket_filenames,
+  phenotypes_file = snakemake@input$phenotypes,
+  output_file_path = snakemake@output$output
 )
