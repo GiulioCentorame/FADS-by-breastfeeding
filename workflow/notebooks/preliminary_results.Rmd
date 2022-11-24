@@ -165,7 +165,7 @@ To model the data, we use the following fields:
 -   **Educational attainment**: we derive a measure of educational attainment as the number of years of education required to attain the highest degree, according to their ICSED level @Carter2022;
 
     | Qualifications (as reported in UK Biobank)              |  ISCED   | Years of education |
-    |---------------------------------------------------------|:--------:|:------------------:|
+    |----------------------------------|:-----------------:|:-----------------:|
     | College or University degree                            |    5     |         20         |
     | NVQ or HND or HNC or equivalent                         |    5     |         19         |
     | Other professioal qualification e.g.: nursing, teaching |    4     |         15         |
@@ -234,7 +234,8 @@ data_for_table <-
   data_clean %>%
   mutate(rs1535_A = factor(round(rs1535_A)),
          rs174575_C = factor(round(rs174575_C)),
-         rs174583_C = factor(round(rs174583_C)))
+         rs174583_C = factor(round(rs174583_C)),
+         sex = genetic_sex)
 
 # Assign alleles for each allelic count
 data_for_table <- 
@@ -253,7 +254,7 @@ data_for_table <-
 
 # Create table labels
 table_lables <- 
-  list(variables = list(genetic_sex="Sex",
+  list(variables = list(sex="Sex",
                         yob="Year of birth",
                         breastfed_as_baby="Breastfed as a baby",
                         FI_ac_score = "FI score (assessment centre)",
@@ -273,7 +274,7 @@ table1(strata, table_lables, groupspan = c(1, 3, 3, 3), data = data_for_table)
 # TODO fix width with table1 %>% t1flex() %>% flextable::...
 
 # Recover a bit of memory
-rm(strata, data_for_table)
+rm(strata)
 ```
 
 # Analysis
@@ -544,41 +545,47 @@ There are a few important differences between UK Biobank and the studies in @Cas
 
 -   Cohort homogeneous for age and with repeated IQ measurements (Dunedin and E-risk) vs first-instance questions at different ages (UK Biobank).
 
-## SNP association model with no covariates
+## Proxy GxE MR
 
-In the simplest case, we fit $Y \sim SNP$:
-
-```{r simple-models-setup, echo=FALSE}
-# Simple model with no interactions: outcome ~ SNP
+```{r pc-models-setup, echo=FALSE}
+# Model including first 10 PCs
 # Returns a list of lm() objects
-simple_model_fi <- function(data,
-                         outcome, # Name of the outcome variable
-                         SNP_name){ # SNP name in the form rsid_ea
-  lapply(split(data, data$breastfed_as_baby),
-         \(x) lm(formula(paste(outcome, 
-                   "~",
-                   SNP_name,
-                   "+ FI_scale")),
-             data = x) %>%
-           broom::tidy()
-  ) %>%
-    bind_rows(.id = "stratum")
-}
 
-simple_model_ea <- function(data,
-                         outcome, # Name of the outcome variable
-                         SNP_name){ # SNP name in the form rsid_ea
+pc_model_ea_list <- function(data,
+                             outcome,
+                             SNP_name){
+  lapply(split(data, data$breastfed_as_baby),
+        \(x) lm(formula(paste(outcome, 
+                   "~",
+                   SNP_name,
+                   "+ sex + yob + ",
+                   paste(paste0("principal_component_", 1:10),
+                         collapse = " + "))),
+             data = x)
+  )
+}
+  
+
+pc_model_fi_list <- function(data,
+                             outcome,
+                             SNP_name){
   lapply(split(data, data$breastfed_as_baby),
          \(x) lm(formula(paste(outcome, 
                    "~",
                    SNP_name,
-                   "")),
-             data = x) %>%
-           broom::tidy()
-  ) %>%
+                   "+ sex + age_at_FI_assessment + FI_scale + ",
+                   paste(paste0("principal_component_", 1:10),
+                         collapse = " + "))),
+             data = x)
+  )
+}
+  
+list_to_tidy_table <- function(list){
+  lapply(list, broom::tidy) %>%
     bind_rows(.id = "stratum")
 }
 ```
+
 
 ```{r forest-plot, echo=FALSE}
 draw_forest_plot <- function(model_table){
@@ -599,182 +606,76 @@ draw_forest_plot <- function(model_table){
   ) %>%
   fp_add_lines("steelblue") %>%
   fp_add_header("Estimate") %>%
-  fp_set_style(box = c("darkblue", "darkred", "black") %>% lapply(function(x) gpar(fill = x, col = "#555555")),
+  fp_set_style(box = c("darkblue", "darkred", "black") %>% 
+                 lapply(function(x) gpar(fill = x, col = "#555555")),
                line = c("darkblue", "darkred", "black"),
                default = gpar(vertices = TRUE)) %>%
     fp_set_zebra_style("#EFEFEF")
 }
+```
 
+
+```{r caspi-like-plot}
+
+caspi_plot_data <-
+  # using data for table as it's the one with the hardcalled genotypes
+  data_for_table %>%
+  select(years_of_schooling, FI_all, sex, breastfed_as_baby, rs1535_A, rs174575_C, rs174583_C, age_at_FI_assessment, yob, starts_with("principal_component"))
 ```
 
 ### Fluid intelligence
 
-```{r simple-model-FI, echo=FALSE}
-# HACK using a loop does not print the table, so I need to call them manually
- simple_model_fi(data_for_models, "FI_all", variants[1]) %>%
+Modelled as $Y \sim SNP + sex + age\ at\ FI\ assessment + FI\ scale+ \sum^{10}_{n=1}PC_{n}$:
+
+```{r pc-model-FI, echo=FALSE}
+ pc_model_fi_list(data_for_models, "FI_all", variants[1]) %>% 
+   lapply(summary)
+ 
+pc_model_fi_list(data_for_models, "FI_all", variants[1]) %>% 
+   list_to_tidy_table() %>%
+   draw_forest_plot()
+
+pc_model_fi_list(data_for_models, "FI_all", variants[1]) %>% 
+  lapply(summary)
+
+ pc_model_fi_list(data_for_models, "FI_all", variants[2]) %>%
+   list_to_tidy_table() %>%
   draw_forest_plot()
 
- simple_model_fi(data_for_models, "FI_all", variants[2]) %>%
-  draw_forest_plot()
-
- simple_model_fi(data_for_models, "FI_all", variants[3]) %>%
+ pc_model_fi_list(data_for_models, "FI_all", variants[3]) %>%
+   lapply(summary)
+ 
+ pc_model_fi_list(data_for_models, "FI_all", variants[3]) %>%
+   list_to_tidy_table() %>%
   draw_forest_plot()
 ```
+
 
 ### Educational attainment
 
-```{r simple-model-EA, echo=FALSE}
- simple_model_ea(data_for_models, "years_of_schooling", variants[1]) %>%
+Modelled as $Y \sim SNP + sex + year\ of\ birth + \sum^{10}_{n=1}PC_{n}$:
+
+```{r pc-model-EA, echo=FALSE}
+ pc_model_ea_list(data_for_models, "years_of_schooling", variants[1]) %>% 
+   lapply(summary)
+ 
+pc_model_ea_list(data_for_models, "years_of_schooling", variants[1]) %>% 
+   list_to_tidy_table() %>%
+   draw_forest_plot()
+
+pc_model_ea_list(data_for_models, "years_of_schooling", variants[1]) %>% 
+  lapply(summary)
+
+ pc_model_ea_list(data_for_models, "years_of_schooling", variants[2]) %>%
+   list_to_tidy_table() %>%
   draw_forest_plot()
 
- simple_model_ea(data_for_models, "years_of_schooling", variants[2]) %>%
-  draw_forest_plot()
-
- simple_model_ea(data_for_models, "years_of_schooling", variants[3]) %>%
-  draw_forest_plot()
-```
-
-## Age and sex as covariates
-
-$Y \sim SNP + age + sex$:
-
-```{r cov-models-setup, echo=FALSE}
-# Model with some covariates: outcome ~ SNP + sex + age
-# Returns a list of lm() objects
-
-cov_model <- function(data,
-                         outcome, # Name of the outcome variable
-                         SNP_name){ # SNP name in the form rsid_ea
-  lapply(split(data, data$breastfed_as_baby),
-         \(x) lm(formula(paste(outcome, 
-                   "~",
-                   SNP_name,
-                   "+ sex + age_at_FI_assessment + FI_scale")),
-             data = x) 
-  )
-}
-
-cov_model_fi <- function(data,
-                         outcome, # Name of the outcome variable
-                         SNP_name){ # SNP name in the form rsid_ea
-  lapply(split(data, data$breastfed_as_baby),
-         \(x) lm(formula(paste(outcome, 
-                   "~",
-                   SNP_name,
-                   "+ sex + age_at_FI_assessment + FI_scale")),
-             data = x) %>%
-           broom::tidy()
-  ) %>%
-    bind_rows(.id = "stratum")
-}
-
-
-cov_model_ea <- function(data,
-                         outcome, # Name of the outcome variable
-                         SNP_name){ # SNP name in the form rsid_ea
-  lapply(split(data, data$breastfed_as_baby),
-         \(x) lm(formula(paste(outcome, 
-                   "~",
-                   SNP_name,
-                   "+ sex + yob")),
-             data = x) %>%
-           broom::tidy()
-  ) %>%
-    bind_rows(.id = "stratum")
-}
-```
-
-### Fluid intelligence
-
-```{r cov-model-FI, echo=FALSE}
-# HACK using a loop does not print the table, so I need to call them manually
- cov_model_fi(data_for_models, "FI_all", variants[1]) %>%
-  draw_forest_plot()
-
- cov_model_fi(data_for_models, "FI_all", variants[2]) %>%
-  draw_forest_plot()
-
- cov_model_fi(data_for_models, "FI_all", variants[3]) %>%
-  draw_forest_plot()
-```
-
-### Educational attainment
-
-```{r cov-model-EA, echo=FALSE}
- cov_model_ea(data_for_models, "years_of_schooling", variants[1]) %>%
-  draw_forest_plot()
-
- cov_model_ea(data_for_models, "years_of_schooling", variants[2]) %>%
-  draw_forest_plot()
-
- cov_model_ea(data_for_models, "years_of_schooling", variants[3]) %>%
-  draw_forest_plot()
-```
-
-## Principal components models
-
-Modelled as $Y \sim SNP + sex + age + \sum^{10}_{n=1}PC_{n}$:
-
-```{r pc-models-setup, echo=FALSE}
-# Model including first 10 PCs
-# Returns a list of lm() objects
-pc_model_fi <- function(data,
-                         outcome, # Name of the outcome variable
-                         SNP_name){ # SNP name in the form rsid_ea
-  lapply(split(data, data$breastfed_as_baby),
-         \(x) lm(formula(paste(outcome, 
-                   "~",
-                   SNP_name,
-                   "+ sex + age_at_FI_assessment + FI_scale + ",
-                   paste(paste0("principal_component_", 1:10),
-                         collapse = " + "))),
-             data = x) %>%
-           broom::tidy()
-  ) %>%
-    bind_rows(.id = "stratum")
-}
-
-pc_model_ea <- function(data,
-                         outcome, # Name of the outcome variable
-                         SNP_name){ # SNP name in the form rsid_ea
-  lapply(split(data, data$breastfed_as_baby),
-         \(x) lm(formula(paste(outcome, 
-                   "~",
-                   SNP_name,
-                   "+ sex + yob + ",
-                   paste(paste0("principal_component_", 1:10),
-                         collapse = " + "))),
-             data = x) %>%
-           broom::tidy()
-  ) %>%
-    bind_rows(.id = "stratum")
-}
-
-```
-
-### Fluid intelligence
-
-```{r pc-ses-model-FI, echo=FALSE}
- pc_model_fi(data_for_models, "FI_all", variants[1]) %>%
-  draw_forest_plot()
-
- pc_model_fi(data_for_models, "FI_all", variants[2]) %>%
-  draw_forest_plot()
-
- pc_model_fi(data_for_models, "FI_all", variants[3]) %>%
-  draw_forest_plot()
-```
-
-### Educational attainment
-
-```{r pc-ses-model-EA, echo=FALSE}
- pc_model_ea(data_for_models, "years_of_schooling", variants[1]) %>%
-  draw_forest_plot()
-
- pc_model_ea(data_for_models, "years_of_schooling", variants[2]) %>%
-  draw_forest_plot()
-
- pc_model_ea(data_for_models, "years_of_schooling", variants[3]) %>%
+ 
+ pc_model_ea_list(data_for_models, "years_of_schooling", variants[3]) %>%
+   lapply(summary)
+ 
+ pc_model_ea_list(data_for_models, "years_of_schooling", variants[3]) %>%
+   list_to_tidy_table() %>%
   draw_forest_plot()
 ```
 
