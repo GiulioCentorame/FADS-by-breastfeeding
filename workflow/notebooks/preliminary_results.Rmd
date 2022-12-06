@@ -17,6 +17,8 @@ library(modelsummary)
 library(forcats)
 library(lubridate)
 library(forestplot)
+library(tidyr)
+library(stringi)
 
 # Load data
 data <- fread("../../temp/merged/data.tsv", stringsAsFactors = TRUE, na.strings = "")
@@ -40,72 +42,16 @@ data_clean <-
                                   end = date_FI_online)/years(1)) %>%
 # remove unrelated individuals
   filter(!(eid %in% unrelateds)) %>%
-  select(-c("mob", "date_FI_online", "date_of_birth"))
+  rename(age_FI_ac_0 = age_FI_ac.0.0,
+         age_FI_ac_1 = age_FI_ac.1.0,
+         age_FI_ac_2 = age_FI_ac.2.0,
+         age_FI_ac_3 = age_FI_ac.3.0,
+         FI_centre_0 = FI_centre_0_,
+         FI_centre_1 = FI_centre_1_,
+         FI_centre_2 = FI_centre_2_,
+         FI_centre_3 = FI_centre_3_) %>%
+  select(-c("mob", "date_of_birth"))
 
-rm(data)
-
-# FIXME something is generating too many NAs!
-# NOTE FI_age_ac is a misnomer, the age is for when attended assessment
-# centre. I correct it midway through but this whole code should be
-# restructured
-fi_score_long <-
-  data_clean %>%
-  select(eid, starts_with("FI_centre")) %>%
-  tidyr::pivot_longer(cols = starts_with("FI_centre"),
-                      names_to = "FI_centre_instance",
-                      values_to = "FI_score")
-
-fi_age_long <- 
-   data_clean %>%
-   select(eid, starts_with("age_FI_ac")) %>%
-   tidyr::pivot_longer(starts_with("age_FI_ac"),
-                       names_to = "FI_centre_instance",
-                       values_to = "FI_age_ac") %>%
-   mutate(FI_centre_instance = case_when(
-     FI_centre_instance == "age_FI_ac.0.0" ~ "FI_centre_0_",
-     FI_centre_instance == "age_FI_ac.1.0" ~ "FI_centre_1_",
-     FI_centre_instance == "age_FI_ac.2.0" ~ "FI_centre_2_",
-     FI_centre_instance == "age_FI_ac.3.0" ~ "FI_centre_3_",
-                                  )) 
-# get table with age at each instance and fi
-fi_ac <-
-full_join(fi_score_long, fi_age_long, by = c("eid", "FI_centre_instance")) %>%
-  # Make NA where no info on FI for that instance
-  mutate(FI_age_ac = case_when(
-    is.na(FI_score) ~ NA_real_,
-    !is.na(FI_score) ~ as.double(FI_age_ac))) %>%
-  group_by(eid) %>%
-  slice_min(order_by = FI_age_ac, with_ties = FALSE) %>%
-  ungroup() %>%
-  rename(FI_ac_score = FI_score)
-
-data_clean <-
-  full_join(fi_ac, data_clean, by = "eid") %>%
-  # Take first instance (= youngest)
-  mutate(
-    FI_all = case_when(
-      FI_age_ac > FI_age_online ~ as.integer(FI_online),
-      FI_age_ac < FI_age_online ~ as.integer(FI_ac_score),
-      FI_age_ac == FI_age_online ~ as.integer(FI_ac_score),
-      TRUE ~ NA_integer_
-      ),
-    # Take the earliest instance of age (same principle)
-    # rounding the age in both to keep it consistent
-    age_at_FI_assessment = case_when(
-      FI_age_ac > FI_age_online ~ as.integer(round(FI_age_online)),
-      FI_age_ac < FI_age_online ~ as.integer(round(FI_age_ac)),
-      FI_age_ac == FI_age_online ~ as.integer(round(FI_age_ac)),
-
-      TRUE ~ NA_integer_
-      ),
-    # Finally, create a factor for which score of intelligence has been used
-    # according to the same rules
-    FI_scale = case_when(
-      FI_age_ac > FI_age_online ~ "Online",
-      FI_age_ac < FI_age_online ~ "Assessment centre",
-      TRUE ~ NA_character_
-      )
-    )
 ```
 
 # Introduction
@@ -156,16 +102,129 @@ To model the data, we use the following fields:
 
     -   Well (field 22008).
 
-# Preparing the data
+# Variables
 
--   **IQ**: we used the earliest available instance for either the online questionnaire or the assessment centre score, using age at completion and which scale is it coming from as a covariate; we expect the variable on the scale of origin to have an approximate effect of 1 (the online questionnaire had a question more in the assessment);
+```{r factor-levels-order, echo=FALSE}
+## Reorder factors
+# Non-forcats solution
+# data_clean$genetic_sex <- factor(data_for_table$genetic_sex,
+#                        levels = rev(levels(data_for_table$genetic_sex))) # Test
+# data_clean$breastfed_as_baby <- factor(data_for_table$breastfed_as_baby,
+#                                            levels = c("Yes",
+#                                                       "No",
+#                                                       "Do not know",
+#                                                       "Prefer not to answer"))
 
--   ***Breastfeeding***: coded as the reported breastfeeding status at the first instance;
+# Forcats solution
+data_clean <-
+  data_clean %>%
+  mutate(genetic_sex = fct_rev(genetic_sex), # To test if it works
+         breastfed_as_baby = fct_relevel(breastfed_as_baby,
+                                         "Yes",
+                                         "No",
+                                         "Do not know",
+                                         "Prefer not to answer"))
+```
+
+-   **IQ**: we used the earliest available instance for either the online questionnaire or the assessment centre score for the Fluid Intelligence, prioritising the assessment centre when available.\
+    The assessment centre and online follow-up score differ by 1 question (which was added to the online follow-up), so we added a covariate indicating the scale of origin.\
+    Age for this outcome is computed as *age at questionnaire completion*.
+
+```{r cleaning-IQ, echo=FALSE}
+  FI_score_data <-
+    data_clean %>%
+    select("eid", starts_with("FI_centre_")) %>%
+    tidyr::pivot_longer(starts_with("FI_centre"),
+                        names_to = "measurement",
+                        values_to = "FI_centre",
+                        names_prefix = "FI_centre_")
+  
+  FI_age_data <-
+    data_clean %>%
+    select("eid", starts_with("age_FI_ac")) %>%
+    tidyr::pivot_longer(starts_with("age_FI_ac"),
+                        names_to = "measurement",
+                        values_to = "FI_age_ac",
+                        names_prefix = "age_FI_ac_",
+                        values_drop_na = TRUE)
+  
+  FI_ac_data <-
+    left_join(FI_score_data, FI_age_data, by = c("eid", "measurement"),
+              values_drop_na = TRUE) %>%
+    group_by(eid) %>%
+    filter(FI_age_ac == min(FI_age_ac, na.rm = TRUE)) %>%
+    select(eid, FI_centre, FI_age_ac)
+  
+# Join with data_clean, then select instance with earliest date
+    data_clean <-
+      data_clean %>%
+    left_join(FI_ac_data, by = "eid") %>%
+    mutate(
+      FI_all = case_when(
+        is.na(FI_online) & is.na(FI_centre) ~ as.numeric(NA),
+        is.na(FI_online) & !is.na(FI_centre) ~ as.numeric(FI_centre),
+        !is.na(FI_online) & is.na(FI_centre) ~ as.numeric(FI_online),
+        FI_age_online < FI_age_ac ~ as.numeric(FI_online),
+        FI_age_online >= FI_age_ac ~ as.numeric(FI_centre)
+        ),
+      # Compute age in the same way
+      age_at_FI_assessment = case_when(
+        is.na(FI_online) & is.na(FI_centre) ~ as.numeric(NA),
+        is.na(FI_online) & !is.na(FI_centre) ~ as.numeric(FI_age_ac),
+        !is.na(FI_online) & is.na(FI_centre) ~ as.numeric(FI_age_online),
+        FI_age_online < FI_age_ac ~ as.numeric(FI_age_online),
+        FI_age_online >= FI_age_ac ~ as.numeric(FI_age_ac)
+        ),
+      # Add factor to distinguish source of dFI
+      FI_scale = case_when(
+        is.na(FI_online) & is.na(FI_centre) ~ as.character(NA),
+        is.na(FI_online) & !is.na(FI_centre) ~ "Assessment Centre",
+        !is.na(FI_online) & is.na(FI_centre) ~ "Online",
+        FI_age_online < FI_age_ac ~ "Online",
+        FI_age_online >= FI_age_ac ~ "Assessment Centre"
+        )
+      )
+```
+
+```{r summary-stats-iq, echo=FALSE}
+data_clean %>%
+  select(FI_centre, FI_online, FI_all) %>%
+  datasummary_skim()
+```
+
+```{r histogram-iq-assessment-centre, echo=FALSE, warning=FALSE}
+
+data_clean %>%
+  ggplot(aes(x = FI_centre)) +
+  geom_histogram(bins = 13)
+```
+
+```{r histogram-iq-online, echo=FALSE, warning=FALSE}
+
+data_clean %>%
+  ggplot(aes(x = FI_online)) +
+  geom_histogram(bins = 13)
+```
+
+```{r histogram-iq-all, echo=FALSE, warning=FALSE}
+
+data_clean %>%
+  ggplot(aes(x = FI_all)) +
+  geom_histogram(bins = 13)
+
+```
+
+```{r histogram-iq-breastfed-vs-not, echo=FALSE, warning=FALSE}
+data_clean %>%
+  mutate(breastfed_as_baby = na_if(breastfed_as_baby, "Do not know") %>% na_if("Prefer not to answer")) %>%
+  ggplot(aes(x=FI_all, fill = breastfed_as_baby)) +
+  geom_histogram(bins = 13)
+```
 
 -   **Educational attainment**: we derive a measure of educational attainment as the number of years of education required to attain the highest degree, according to their ICSED level @Carter2022;
 
     | Qualifications (as reported in UK Biobank)              |  ISCED   | Years of education |
-    |----------------------------------|:-----------------:|:-----------------:|
+    |--------------------------------------|:---------------:|:---------------:|
     | College or University degree                            |    5     |         20         |
     | NVQ or HND or HNC or equivalent                         |    5     |         19         |
     | Other professioal qualification e.g.: nursing, teaching |    4     |         15         |
@@ -202,28 +261,68 @@ data_clean <-
   select(-starts_with("qualifications"))
 ```
 
--   **Age**: we use the year of birth for educational attainment, or age at completion for the IQ score;
+```{r summary-stats-ea, echo=FALSE}
+data_clean %>%
+  select(years_of_schooling) %>%
+  datasummary_skim()
+```
 
-```{r factor-levels-order, echo=FALSE}
-## Reorder factors
-# Non-forcats solution
-# data_clean$genetic_sex <- factor(data_for_table$genetic_sex,
-#                        levels = rev(levels(data_for_table$genetic_sex))) # Test
-# data_clean$breastfed_as_baby <- factor(data_for_table$breastfed_as_baby,
-#                                            levels = c("Yes",
-#                                                       "No",
-#                                                       "Do not know",
-#                                                       "Prefer not to answer"))
+```{r histogram-ea, echo=FALSE, warning=FALSE}
+data_clean %>%
+  ggplot(aes(x = years_of_schooling)) +
+  geom_histogram(bins = 6)
 
-# Forcats solution
+
+```
+
+-   **Age**: we use the year of birth for educational attainment, or age at completion for the fluid intelligence score;
+-   **Breastfeeding**: coded as the breastfeeding status reported at the first instance;
+
+```{r summary-stats-bf, echo=FALSE}
+data_clean %>%
+  datasummary(FI_all + years_of_schooling ~ breastfed_as_baby, data = .)
+```
+
+-   **Genotypes**: we tested the association for 3 different SNPs (`rs1535`, `rs174575`, and `rs174583`), which have been previously investigated for a potential interaction effect on IQ @Caspi2007. These 3 SNPs have been previously tested in Shin et al. (2014) for their association with serum DHA and ADA:
+
+```{r snp-info-opengwas, echo = FALSE}
+bind_rows(ieugwasr::associations("rs1535", "met-a-319"),
+          ieugwasr::associations("rs1535", "met-a-409"),
+          ieugwasr::associations("rs174575", "met-a-319"),
+          ieugwasr::associations("rs174575", "met-a-409"),
+          ieugwasr::associations("rs174583", "met-a-319"),
+          ieugwasr::associations("rs174583", "met-a-409")
+) %>%
+  select(trait, id, ea, nea, eaf, beta, n, p) %>%
+  rename(` ` = trait,
+         `openGWAS id`=id,
+         `Effect allele` = ea,
+         `Non-effect allele` = nea,
+         `Beta` = beta,
+         `Sample size` = n,
+         `P-value`=p,
+         `Effect allele frequency` = eaf
+         ) %>%
+  kableExtra::kbl(caption = "Summary statistics for SNPs of interest ") %>%
+  kableExtra::kable_paper() %>%
+  kableExtra::pack_rows("rs1535", 1,2) %>%
+  kableExtra::pack_rows("rs174575", 3,4) %>%
+  kableExtra::pack_rows("rs174583", 5,6)
+```
+
+```{r align-snps-increaser-allele, echo = FALSE}
 data_clean <-
   data_clean %>%
-  mutate(genetic_sex = fct_rev(genetic_sex), # To test if it works
-         breastfed_as_baby = fct_relevel(breastfed_as_baby,
-                                         "Yes",
-                                         "No",
-                                         "Do not know",
-                                         "Prefer not to answer"))
+  mutate(rs1535_G = 2-rs1535_A,
+         rs174575_G = 2-rs174575_C,
+         rs174583_T = 2-rs174583_C
+         ) %>%
+  select(-c(rs1535_A, rs174575_C, rs174583_C))
+
+# test it's all good
+if(with(data_clean, any(rs1535_G < 0 | rs174575_G < 0 | rs174583_T < 0, na.rm = TRUE))){
+  stop("Allelic dosages cannot be negative")
+}
 ```
 
 # Table 1
@@ -232,24 +331,25 @@ data_clean <-
 data_for_table <-
   # Round dosage to allelic count
   data_clean %>%
-  mutate(rs1535_A = factor(round(rs1535_A)),
-         rs174575_C = factor(round(rs174575_C)),
-         rs174583_C = factor(round(rs174583_C)),
+  mutate(rs1535_G = factor(round(rs1535_G)),
+         rs174575_G = factor(round(rs174575_G)),
+         rs174583_T = factor(round(rs174583_T)),
          sex = genetic_sex)
 
 # Assign alleles for each allelic count
 data_for_table <- 
   data_for_table %>%
   mutate(
-    rs1535_A = case_when(rs1535_A == 0 ~ "GG",
-                         rs1535_A == 1 ~ "AG",
-                         rs1535_A == 2 ~ "AA"),
-    rs174575_C = case_when(rs174575_C == 0 ~ "GG",
-                           rs174575_C == 1 ~ "CG",
-                           rs174575_C == 2 ~ "CC"),
-    rs174583_C = case_when(rs174583_C == 0 ~ "TT",
-                           rs174583_C == 1 ~ "CT",
-                           rs174583_C == 2 ~ "CC")
+    # TODO redo after flipping alleles
+    rs1535_G = case_when(rs1535_G == 2 ~ "GG",
+                         rs1535_G == 1 ~ "GA",
+                         rs1535_G == 0 ~ "AA"),
+    rs174575_G = case_when(rs174575_G == 2 ~ "GG",
+                           rs174575_G == 1 ~ "GC",
+                           rs174575_G == 0 ~ "CC"),
+    rs174583_T = case_when(rs174583_T == 2 ~ "TT",
+                           rs174583_T == 1 ~ "TC",
+                           rs174583_T == 0 ~ "CC")
     )
 
 # Create table labels
@@ -266,9 +366,9 @@ table_lables <-
        groups = list("", "rs1535", "rs174575", "rs174583")
   )
 strata <- c(list(Total=data_for_table),
-            split(data_for_table, data_for_table$rs1535_A),
-            split(data_for_table, data_for_table$rs174575_C),
-            split(data_for_table, data_for_table$rs174583_C))
+            split(data_for_table, data_for_table$rs1535_G),
+            split(data_for_table, data_for_table$rs174575_G),
+            split(data_for_table, data_for_table$rs174583_T))
 
 table1(strata, table_lables, groupspan = c(1, 3, 3, 3), data = data_for_table)
 # TODO fix width with table1 %>% t1flex() %>% flextable::...
@@ -316,7 +416,7 @@ model_table <-
                            )
              )
 # List of variants 
-variants <- c("rs1535_A", "rs174575_C", "rs174583_C")
+variants <- c("rs1535_G", "rs174575_G", "rs174583_T")
 ```
 
 ------------------------------------------------------------------------
@@ -324,6 +424,17 @@ variants <- c("rs1535_A", "rs174575_C", "rs174583_C")
 **NOTE:** the analysis includes complete cases only. The number of observations for each model can vary according to the missingness in the predictor and outcome variables
 
 ------------------------------------------------------------------------
+
+## Principal components and breastfeeding
+
+In order to decide on the number of principal components to use as a covariate, we regress breastfeeding status onto the first 40 genetic principal components:
+
+```{r pc-breastfeeding, echo=FALSE}
+data_for_models %>%
+  mutate(breastfed_as_baby = na_if(breastfed_as_baby, "Missing")) %>%
+  lm(formula(paste("FI_all ~ FI_scale +", paste0("principal_component_", 1:40, collapse =  " + "))), data = .) %>%
+  summary()
+```
 
 ## Phenotypic associations
 
@@ -337,18 +448,19 @@ corr_matrix <-
                                     "Breastfed" = 1,
                                     "Bottlefed" = 0,
                                     .default = NA_real_)) %>%
-  select(breastfed_as_baby, yob, Townsend_deprivation_index, FI_all, FI_age_ac, FI_age_online, FI_ac_score, FI_online, rs1535_A, rs174575_C, rs174583_C, years_of_schooling, IMD_England, age_at_FI_assessment) %>%
+  select(breastfed_as_baby, yob, Townsend_deprivation_index, FI_all, FI_age_ac, FI_age_online, FI_centre, FI_online, rs1535_G, rs174575_G, rs174583_T, years_of_schooling, IMD_England, age_at_FI_assessment) %>%
   rename(breastfed = breastfed_as_baby,
          TDI = Townsend_deprivation_index,
          FI_all_instances = FI_all,
+         age_at_FI_assessment = age_at_FI_assessment,
          Age_at_FI_assessment_centre = FI_age_ac,
          Age_at_FI_online = FI_age_online,
-         FI_assessment_centre = FI_ac_score,
+         FI_assessment_centre = FI_centre,
          FI_online = FI_online,
          year_of_birth = yob,
-         rs1535 = rs1535_A,
-         rs174575 = rs174575_C,
-         rs174583 = rs174583_C) %>%
+         rs1535 = rs1535_G,
+         rs174575 = rs174575_G,
+         rs174583 = rs174583_T) %>%
   cor(use = "pairwise.complete.obs")
   
 
@@ -363,7 +475,7 @@ ggcorrplot::ggcorrplot(corr_matrix,
 
 ### Breastfeeding and IQ
 
-There is evidence from the previous literature that breastfeeding might be associated with IQ @Hartwig2019. To test this hypothesis, we fit $Y \sim breastfeeding + sex + age + TDI + \sum^{10}_{n=1}PC_{n}$ , where $breastfeeding$ is coded as the reference level:
+There is evidence from the previous literature that breastfeeding might be associated with IQ @Hartwig2019. To test this hypothesis, we fit $Y \sim breastfeeding + sex + age + TDI + \sum^{40}_{n=1}PC_{n}$ , where $breastfeeding$ is coded as the reference level:
 
 ```{r breastfeeding-iq, echo = FALSE}
 
@@ -372,7 +484,7 @@ formula_bf_iq_agesex <- formula(paste("FI_all ~ breastfed_as_baby + sex + age_at
 
 model_bf_iq_agesex <- 
   data_for_models %>%
-  lm(formula_bf_iq_agesex, data =.)
+  lm(formula_bf_iq_agesex, data = .)
 
 summary(model_bf_iq_agesex)
 ```
@@ -384,7 +496,7 @@ formula_bf_iq_tdi <- formula(paste("FI_all ~ breastfed_as_baby + sex + age_at_FI
 
 model_bf_iq_tdi <- 
   data_for_models %>%
-  lm(formula_bf_iq_tdi, data =.)
+  lm(formula_bf_iq_tdi, data = .)
 
 summary(model_bf_iq_tdi)
 ```
@@ -392,7 +504,7 @@ summary(model_bf_iq_tdi)
 ```{r breastfeeding-iq-pcs, echo = FALSE}
 
 formula_bf_iq_tdi_pcs <- formula(paste("FI_all ~ breastfed_as_baby + sex + age_at_FI_assessment + Townsend_deprivation_index +",
-                             paste(paste0("principal_component_", 1:10),
+                             paste(paste0("principal_component_", 1:40),
                                    collapse = " + ")
                              ))
 
@@ -440,8 +552,8 @@ We also want to check whether FADS and breastfeeding are associated. They should
 ```{r breastfeeding-rs1535, echo=FALSE}
 
 breastfeeding_rs1535 <-
-  formula(paste("breastfed_as_baby ~ rs1535_A +",
-                             paste(paste0("principal_component_", 1:10),
+  formula(paste("breastfed_as_baby ~ rs1535_G +",
+                             paste(paste0("principal_component_", 1:40),
                                    collapse = " + ")
                              ))
 
@@ -454,8 +566,8 @@ data_for_models %>%
 ```{r breastfeeding-rs174575, echo=FALSE}
 
 breastfeeding_rs174575 <-
-  formula(paste("breastfed_as_baby ~ rs174575_C +",
-                             paste(paste0("principal_component_", 1:10),
+  formula(paste("breastfed_as_baby ~ rs174575_G +",
+                             paste(paste0("principal_component_", 1:40),
                                    collapse = " + ")
                              ))
 
@@ -468,8 +580,8 @@ data_for_models %>%
 ```{r breastfeeding-rs174583, echo=FALSE}
 
 breastfeeding_rs174583 <-
-  formula(paste("breastfed_as_baby ~ rs174583_C +",
-                             paste(paste0("principal_component_", 1:10),
+  formula(paste("breastfed_as_baby ~ rs174583_T +",
+                             paste(paste0("principal_component_", 1:40),
                                    collapse = " + ")
                              ))
 
@@ -492,10 +604,29 @@ model_caspi_rs1535_noagesex <-
   mutate(breastfed_as_baby = na_if(breastfed_as_baby, "Missing"),
          breastfed_as_baby = recode(breastfed_as_baby, "Breastfed" = 1,
                       "Bottlefed" = 0)) %>%
-  lm(FI_all ~ rs1535_A + breastfed_as_baby + rs1535_A*breastfed_as_baby + Townsend_deprivation_index + FI_scale + age_at_FI_assessment, data =.)
+  lm(FI_all ~ rs1535_G + sex + breastfed_as_baby + FI_scale + age_at_FI_assessment + rs1535_G*breastfed_as_baby, data =.)
 
 summary(model_caspi_rs1535_noagesex)
 
+
+model_caspi_rs1535_noagesex <- 
+  data_for_models %>%
+  mutate(breastfed_as_baby = na_if(breastfed_as_baby, "Missing"),
+         breastfed_as_baby = recode(breastfed_as_baby, "Breastfed" = 1,
+                      "Bottlefed" = 0)) %>%
+  lm(FI_all ~ rs1535_G + sex + breastfed_as_baby + FI_scale + age_at_FI_assessment + Townsend_deprivation_index + rs1535_G*breastfed_as_baby, data =.)
+
+summary(model_caspi_rs1535_noagesex)
+
+
+model_caspi_rs1535_noagesex <- 
+  data_for_models %>%
+  mutate(breastfed_as_baby = na_if(breastfed_as_baby, "Missing"),
+         breastfed_as_baby = recode(breastfed_as_baby, "Breastfed" = 1,
+                      "Bottlefed" = 0)) %>%
+  lm(paste("FI_all ~ rs1535_G + sex + breastfed_as_baby + FI_scale + age_at_FI_assessment + Townsend_deprivation_index + rs1535_G*breastfed_as_baby +", paste0("principal_component_", 1:40, collapse = " + ")), data =.)
+
+summary(model_caspi_rs1535_noagesex)
 ```
 
 ```{r caspi-analysis-rs174575-no-agesex, echo=FALSE}
@@ -505,7 +636,7 @@ model_caspi_rs174575_noagesex <-
   mutate(breastfed_as_baby = na_if(breastfed_as_baby, "Missing"),
          breastfed_as_baby = recode(breastfed_as_baby, "Breastfed" = 1,
                       "Bottlefed" = 0)) %>%
-  lm(FI_all ~ rs174575_C + breastfed_as_baby + rs174575_C*breastfed_as_baby + Townsend_deprivation_index + FI_scale + age_at_FI_assessment, data =.)
+  lm(FI_all ~ rs174575_G + breastfed_as_baby + rs174575_G*breastfed_as_baby + Townsend_deprivation_index + FI_scale + age_at_FI_assessment, data =.)
 
 summary(model_caspi_rs174575_noagesex)
 
@@ -520,7 +651,7 @@ model_caspi_rs1535_agesex <-
   mutate(breastfed_as_baby = na_if(breastfed_as_baby, "Missing"),
          breastfed_as_baby = recode(breastfed_as_baby, "Breastfed" = 1,
                       "Bottlefed" = 0)) %>%
-  lm(FI_all ~ rs1535_A + breastfed_as_baby + rs1535_A*breastfed_as_baby + Townsend_deprivation_index + sex + yob, data =.)
+  lm(FI_all ~ rs1535_G + breastfed_as_baby + rs1535_G*breastfed_as_baby + Townsend_deprivation_index + sex + yob, data =.)
 
 summary(model_caspi_rs1535_agesex)
 ```
@@ -532,7 +663,7 @@ model_caspi_rs174575_agesex <-
   mutate(breastfed_as_baby = na_if(breastfed_as_baby, "Missing"),
          breastfed_as_baby = recode(breastfed_as_baby, "Breastfed" = 1,
                       "Bottlefed" = 0)) %>%
-  lm(FI_online ~ rs174575_C + breastfed_as_baby + rs174575_C*breastfed_as_baby + Townsend_deprivation_index + sex + yob, data =.)
+  lm(FI_online ~ rs174575_G + breastfed_as_baby + rs174575_G*breastfed_as_baby + Townsend_deprivation_index + sex + yob, data =.)
 
 summary(model_caspi_rs174575_agesex)
 ```
@@ -544,6 +675,380 @@ There are a few important differences between UK Biobank and the studies in @Cas
 -   Measure of individual SES based on parental occupation (Dunedin) vs regional deprivation (UK Biobank);
 
 -   Cohort homogeneous for age and with repeated IQ measurements (Dunedin and E-risk) vs first-instance questions at different ages (UK Biobank).
+
+## Testing for genotype-PC interaction
+
+### Fluid intelligence
+
+```{r genotype-simple-setup, echo = FALSE}
+# Function for intelligence
+simple_covariates_iq_model <- function(data,
+                      outcome,
+                       SNP_name,
+                       principal_components){
+ model <- formula(
+    paste(outcome, "~",
+          # SNP
+          SNP_name,
+          # Main covariates
+          "+ sex + age_at_FI_assessment + FI_scale +",
+          paste0(SNP_name, "*breastfed_as_baby")
+    ))
+  lm(model, data = data)
+}
+
+# Function for EA
+simple_covariates_ea_model <- function(data,
+                       outcome,
+                       SNP_name,
+                       principal_components){
+ model <- formula(
+    paste(outcome, "~",
+          # SNP
+          SNP_name,
+          # Main covariates
+          "+ sex + yob +",
+          paste0(SNP_name, "*breastfed_as_baby")
+          ))
+  lm(model, data = data)
+}
+```
+
+```{r genotype-pc-setup, echo = FALSE}
+# Function for intelligence
+cxg_iq_model <- function(data,
+                       outcome,
+                       SNP_name,
+                       principal_components){
+ model <- formula(
+    paste(outcome, "~",
+          # SNP
+          SNP_name,
+          # Main covariates
+          "+ sex + age_at_FI_assessment + FI_scale +",
+          # Interaction with SNP:
+          # - Sex
+          # - Age
+          # - Breastfeeding
+          paste0("sex*", SNP_name), "+", 
+          paste0("yob*",SNP_name), "+",
+          paste0(SNP_name, "*breastfed_as_baby"), "+",
+          # Interaction across covariates
+          "breastfed_as_baby*sex", "+",
+          "breastfed_as_baby*yob", "+",
+          "sex*yob"
+    ))
+  lm(model, data = data)
+}
+
+# Function for EA
+cxg_ea_model <- function(data,
+                       outcome,
+                       SNP_name,
+                       principal_components){
+ model <- formula(
+    paste(outcome, "~",
+          # SNP
+          SNP_name,
+          # Main covariates
+          "+ sex + yob +",
+          # Interaction with SNP:
+          # - Sex
+          # - Age
+          # - Breastfeeding
+          paste0("sex*", SNP_name), "+", 
+          paste0("yob*",SNP_name), "+",
+          paste0(SNP_name, "*breastfed_as_baby"), "+",
+          # Interaction across covariates
+          "breastfed_as_baby*sex", "+",
+          "breastfed_as_baby*yob", "+",
+          "sex*yob"
+          ))
+  lm(model, data = data)
+}
+```
+
+```{r genotype-pc-interaction-setup, echo=FALSE}
+# Function for intelligence
+pcxg_iq_model <- function(data,
+                       outcome,
+                       SNP_name,
+                       principal_components){
+ model <- formula(
+    paste(outcome, "~",
+          # SNP
+          SNP_name,
+          # Main covariates
+          "+ sex + age_at_FI_assessment + FI_scale +",
+          # Interaction with SNP:
+          # - Sex
+          # - Age
+          # - Breastfeeding
+          paste0("sex*", SNP_name), "+", 
+          paste0("age_at_FI_assessment*",SNP_name), "+",
+          paste0(SNP_name, "*breastfed_as_baby"), "+",
+          # Interaction across covariates
+          "breastfed_as_baby*sex", "+",
+          "breastfed_as_baby*age_at_FI_assessment", "+",
+          "sex*age_at_FI_assessment", "+",
+          # PCs
+          paste(
+            paste0("principal_component_", 1:principal_components),
+                         collapse = " + "), "+",
+          # Interaction with pcs
+          # - breastfeeding
+          paste0(
+            paste0("principal_component_", 1:principal_components),
+                          "*breastfed_as_baby", collapse = " + "), "+",
+          # - SNP
+          paste0(
+            paste0("principal_component_", 1:principal_components),
+                          "*", SNP_name, collapse = " + "), "+",
+          # - sex
+          paste0(
+            paste0("principal_component_", 1:principal_components),
+                          "*sex", collapse = " + "), "+",
+          # - age
+          paste0(
+            paste0("principal_component_", 1:principal_components),
+                          "*age_at_FI_assessment", collapse = " + ")
+    ))
+ 
+  lm(model, data = data)
+}
+
+# Function for EA
+pcxg_ea_model <- function(data,
+                       outcome,
+                       SNP_name,
+                       principal_components){
+ model <- formula(
+    paste(outcome, "~",
+          # SNP
+          SNP_name,
+          # Main covariates
+          "+ sex + yob +",
+          # Interaction with SNP:
+          # - Sex
+          # - Age
+          # - Breastfeeding
+          paste0("sex*", SNP_name), "+", 
+          paste0("yob*",SNP_name), "+",
+          paste0(SNP_name, "*breastfed_as_baby"), "+",
+          # Interaction across covariates
+          "breastfed_as_baby*sex", "+",
+          "breastfed_as_baby*yob", "+",
+          "sex*yob", "+",
+          # PCs
+          paste(
+            paste0("principal_component_", 1:principal_components),
+                         collapse = " + "), "+",
+          # Interaction with pcs
+          # - breastfeeding
+          paste0(
+            paste0("principal_component_", 1:principal_components),
+                          "*breastfed_as_baby", collapse = " + "), "+",
+          # - SNP
+          paste0(
+            paste0("principal_component_", 1:principal_components),
+                          "*", SNP_name, collapse = " + "), "+",
+          # - sex
+          paste0(
+            paste0("principal_component_", 1:principal_components),
+                          "*sex", collapse = " + "), "+",
+          # - age
+          paste0(
+            paste0("principal_component_", 1:principal_components),
+                          "*yob", collapse = " + ")
+    ))
+  
+  lm(model, data = data)
+}
+```
+
+```{r forest-plot-interactions-fi, echo = FALSE}
+simple_covariates_iq_coeff <-
+  lapply(
+    variants,
+    \(variant)
+    data_for_models %>%
+      mutate(breastfed_as_baby = na_if(breastfed_as_baby, "Missing")) %>%
+      drop_na(breastfed_as_baby) %>%
+      simple_covariates_iq_model("FI_all", variant, 40) %>%
+      broom::tidy() %>%
+      filter(
+        stri_detect_fixed(term, paste0(variant, ":breastfed_as_baby"))
+        ) %>%
+      mutate(variant = stri_extract_first_regex(variant, "^rs[0-9]+")) %>%
+      select(variant, estimate, std.error)
+  ) %>%
+  bind_rows() %>%
+  mutate(trait = "IQ",
+         model = "Age and sex")
+
+cxg_iq_coeff <-
+  lapply(
+    variants,
+    \(variant)
+    data_for_models %>%
+      mutate(breastfed_as_baby = na_if(breastfed_as_baby, "Missing")) %>%
+      drop_na(breastfed_as_baby) %>%
+      cxg_iq_model("FI_all", variant, 40) %>%
+      broom::tidy() %>%
+      filter(
+        stri_detect_fixed(term, paste0(variant, ":breastfed_as_baby"))
+        ) %>%
+      mutate(variant = stri_extract_first_regex(variant, "^rs[0-9]+")) %>%
+      select(variant, estimate, std.error)
+  ) %>%
+  bind_rows() %>%
+  mutate(trait = "IQ",
+         model = "Age, sex, and interactions")
+
+pcxg_iq_coeff <-
+  lapply(
+    variants,
+    \(variant)
+    data_for_models %>%
+      mutate(breastfed_as_baby = na_if(breastfed_as_baby, "Missing")) %>%
+      drop_na(breastfed_as_baby) %>%
+      pcxg_iq_model("FI_all", variant, 40) %>%
+      broom::tidy() %>%
+      filter(
+        stri_detect_fixed(term, paste0(variant, ":breastfed_as_baby"))
+        ) %>%
+      mutate(variant = stri_extract_first_regex(variant, "^rs[0-9]+")) %>%
+      select(variant, estimate, std.error)
+  ) %>%
+  bind_rows() %>%
+  mutate(trait = "IQ",
+         model = "Age, sex, PCs, and interactions")
+
+fp_interaction_iq_data <-
+  bind_rows(simple_covariates_iq_coeff, cxg_iq_coeff, pcxg_iq_coeff)
+```
+
+```{r forest-plot-interactions-ea-data, echo = FALSE}
+simple_covariates_ea_coeff <-
+  lapply(
+    variants,
+    \(variant)
+    data_for_models %>%
+      mutate(breastfed_as_baby = na_if(breastfed_as_baby, "Missing")) %>%
+      drop_na(breastfed_as_baby) %>%
+      simple_covariates_ea_model("FI_all", variant, 40) %>%
+      broom::tidy() %>%
+      filter(
+        stri_detect_fixed(term, paste0(variant, ":breastfed_as_baby"))
+        ) %>%
+      mutate(variant = stri_extract_first_regex(variant, "^rs[0-9]+")) %>%
+      select(variant, estimate, std.error)
+  ) %>%
+  bind_rows() %>%
+  mutate(trait = "Educational Attainment",
+         model = "Age and sex")
+
+cxg_ea_coeff <-
+  lapply(
+    variants,
+    \(variant)
+    data_for_models %>%
+      mutate(breastfed_as_baby = na_if(breastfed_as_baby, "Missing")) %>%
+      drop_na(breastfed_as_baby) %>%
+      cxg_ea_model("FI_all", variant, 40) %>%
+      broom::tidy() %>%
+      filter(
+        stri_detect_fixed(term, paste0(variant, ":breastfed_as_baby"))
+        ) %>%
+      mutate(variant = stri_extract_first_regex(variant, "^rs[0-9]+")) %>%
+      select(variant, estimate, std.error)
+  ) %>%
+  bind_rows() %>%
+  mutate(trait = "Educational Attainment",
+         model = "Age, sex, and covariate interactions")
+
+pcxg_ea_coeff <-
+  lapply(
+    variants,
+    \(variant)
+    data_for_models %>%
+      mutate(breastfed_as_baby = na_if(breastfed_as_baby, "Missing")) %>%
+      drop_na(breastfed_as_baby) %>%
+      pcxg_ea_model("FI_all", variant, 40) %>%
+      broom::tidy() %>%
+      filter(
+        stri_detect_fixed(term, paste0(variant, ":breastfed_as_baby"))
+        ) %>%
+      mutate(variant = stri_extract_first_regex(variant, "^rs[0-9]+")) %>%
+      select(variant, estimate, std.error)
+  ) %>%
+  bind_rows() %>%
+  mutate(trait = "Educational Attainment",
+         model = "Age, sex, PCs, and covariate interactions")
+
+fp_interaction_ea_data <-
+  bind_rows(simple_covariates_ea_coeff, cxg_ea_coeff, pcxg_ea_coeff)
+```
+
+```{r forest-plot-interactions-all, echo = FALSE}
+
+bind_rows(fp_interaction_iq_data, fp_interaction_ea_data) %>%
+  mutate(trait = fct_relevel(trait, "IQ", "Educational Attainment")) %>%
+  ggplot(aes(y = variant, x = estimate))+
+  geom_pointrange(aes(xmin=estimate-1.96*std.error, xmax = estimate + 1.96*std.error,
+                    colour= model),
+                position = position_dodge(width=0.3)) +
+  facet_grid(~ trait) +
+  theme_bw() +
+  scale_colour_hue()+
+  labs(title = "Interaction term estimate",
+       subtitle = "Error bars represent 95% confidence intervals")
+
+```
+
+```{r genotype-pc-interaction-fi-data, eval=FALSE, include=FALSE}
+
+data_for_models %>%
+  mutate(breastfed_as_baby = na_if(breastfed_as_baby, "Missing")) %>%
+  drop_na(breastfed_as_baby) %>%
+pcxg_iq_model("FI_all", variants[1], 40)%>%
+ summary()
+
+data_for_models %>%
+  mutate(breastfed_as_baby = na_if(breastfed_as_baby, "Missing")) %>%
+  drop_na(breastfed_as_baby) %>%
+pcxg_iq_model("FI_all", variants[2], 40) %>%
+  summary()
+
+data_for_models %>%
+  mutate(breastfed_as_baby = na_if(breastfed_as_baby, "Missing")) %>%
+  drop_na(breastfed_as_baby) %>%
+pcxg_iq_model("FI_all", variants[3], 40) %>%
+  summary()
+```
+
+### Educational attainment
+
+```{r genotype-pc-interaction-ea-data, echo=FALSE}
+
+data_for_models %>%
+  mutate(breastfed_as_baby = na_if(breastfed_as_baby, "Missing")) %>%
+  drop_na(breastfed_as_baby) %>%
+pcxg_ea_model("years_of_schooling", variants[1], 40) %>%
+  summary()
+
+data_for_models %>%
+  mutate(breastfed_as_baby = na_if(breastfed_as_baby, "Missing")) %>%
+  drop_na(breastfed_as_baby) %>%
+pcxg_ea_model("years_of_schooling", variants[2], 40) %>%
+  summary()
+
+data_for_models %>%
+  mutate(breastfed_as_baby = na_if(breastfed_as_baby, "Missing")) %>%
+  drop_na(breastfed_as_baby) %>%
+pcxg_ea_model("years_of_schooling", variants[3], 40) %>%
+  summary()
+```
 
 ## Proxy GxE MR
 
@@ -559,7 +1064,7 @@ pc_model_ea_list <- function(data,
                    "~",
                    SNP_name,
                    "+ sex + yob + ",
-                   paste(paste0("principal_component_", 1:10),
+                   paste(paste0("principal_component_", 1:40),
                          collapse = " + "))),
              data = x)
   )
@@ -574,7 +1079,7 @@ pc_model_fi_list <- function(data,
                    "~",
                    SNP_name,
                    "+ sex + age_at_FI_assessment + FI_scale + ",
-                   paste(paste0("principal_component_", 1:10),
+                   paste(paste0("principal_component_", 1:40),
                          collapse = " + "))),
              data = x)
   )
@@ -585,7 +1090,6 @@ list_to_tidy_table <- function(list){
     bind_rows(.id = "stratum")
 }
 ```
-
 
 ```{r forest-plot, echo=FALSE}
 draw_forest_plot <- function(model_table){
@@ -614,18 +1118,75 @@ draw_forest_plot <- function(model_table){
 }
 ```
 
-
-```{r caspi-like-plot}
+```{r caspi-like-plot, echo = FALSE}
+# Set up data
 
 caspi_plot_data <-
   # using data for table as it's the one with the hardcalled genotypes
   data_for_table %>%
-  select(years_of_schooling, FI_all, sex, breastfed_as_baby, rs1535_A, rs174575_C, rs174583_C, age_at_FI_assessment, yob, starts_with("principal_component"))
+  select(years_of_schooling, FI_all, sex, breastfed_as_baby, rs1535_G, rs174575_G, rs174583_T, age_at_FI_assessment, yob, FI_scale, starts_with("principal_component")) %>%
+  mutate(breastfed_as_baby = na_if(breastfed_as_baby, "Do not know") %>% na_if(., "Prefer not to answer") %>% fct_drop(),
+         breastfed_as_baby = recode(breastfed_as_baby, "Yes" = "Breastfed",
+                      "No" = "Bottlefed"))
+
+# Boxplot like Caspi et al.
+
+caspi_plot <- function(data = caspi_plot_data, 
+                       variant, 
+                       outcome, 
+                       outcome_label,
+                       limits # y axis range
+                       ){
+  
+  dodge <- position_dodge(0.8)
+
+  data %>%
+    drop_na(breastfed_as_baby) %>%
+  ggplot(aes_string(x = variant, y=outcome, fill = "breastfed_as_baby"))+
+  stat_summary(geom = "bar", fun = mean, position = dodge, color = "black", width = 0.8) +
+    stat_summary(geom = "errorbar", fun.data = \(x) mean_se(x) %>% mutate(ymin = y), position = dodge, width = 0.2)+ 
+    expand_limits(y = limits) +
+   theme_classic()+
+   # same colours as the paper
+   scale_fill_manual("", values = c("Bottlefed" = "#BBE0E3", "Breastfed" = "#333399"))+
+   scale_y_continuous(expand = c(0,0))+
+   theme(axis.text=element_text(colour="black"), 
+         legend.position="bottom", 
+         legend.background = element_rect(fill = "white",
+                                          size = 0.5, 
+                                          colour = "black"),
+         axis.ticks.length.y = unit(.22, "cm"),
+         strip.text = element_text(size = 12),
+         strip.background = element_rect(colour="transparent"))+
+   xlab("Genotype") + ylab(outcome_label)
+}
+
+# Plot same model for all variants, with a given outcome
+
+caspi_plot_all_vars <- function(data, 
+                                variants = variants, 
+                                outcome, 
+                                outcome_label,
+                                limits #y axis range
+                                ){
+  
+  legend <- caspi_plot(data, variants[1], outcome, outcome_label = outcome_label, limits) %>% 
+    cowplot::get_legend()
+  
+  plot_row <- cowplot::plot_grid(
+  # Join and return plot
+  caspi_plot(data, variants[1], outcome, outcome_label = outcome_label, limits) + theme(legend.position="none"),
+  caspi_plot(data, variants[2], outcome, outcome_label = outcome_label, limits) + theme(legend.position="none"),
+  caspi_plot(data, variants[3], outcome, outcome_label = outcome_label, limits) +theme(legend.position="none"),
+  nrow = 1
+  )
+  cowplot::plot_grid(plot_row, legend, ncol = 1, rel_heights = c(1, .1))
+}
 ```
 
 ### Fluid intelligence
 
-Modelled as $Y \sim SNP + sex + age\ at\ FI\ assessment + FI\ scale+ \sum^{10}_{n=1}PC_{n}$:
+Modelled as $Y \sim SNP + sex + age\ at\ FI\ assessment + FI\ scale+ \sum^{10}_{n=1}PC_{n}$
 
 ```{r pc-model-FI, echo=FALSE}
  pc_model_fi_list(data_for_models, "FI_all", variants[1]) %>% 
@@ -650,10 +1211,13 @@ pc_model_fi_list(data_for_models, "FI_all", variants[1]) %>%
   draw_forest_plot()
 ```
 
+```{r caspi-plot-FI, warning=FALSE}
+caspi_plot_all_vars(caspi_plot_data, variants, "FI_all", "Fluid intelligence score", limits = c(0,13))
+```
 
 ### Educational attainment
 
-Modelled as $Y \sim SNP + sex + year\ of\ birth + \sum^{10}_{n=1}PC_{n}$:
+Modelled as $Y \sim SNP + sex + year\ of\ birth + \sum^{10}_{n=1}PC_{n}$
 
 ```{r pc-model-EA, echo=FALSE}
  pc_model_ea_list(data_for_models, "years_of_schooling", variants[1]) %>% 
@@ -677,6 +1241,10 @@ pc_model_ea_list(data_for_models, "years_of_schooling", variants[1]) %>%
  pc_model_ea_list(data_for_models, "years_of_schooling", variants[3]) %>%
    list_to_tidy_table() %>%
   draw_forest_plot()
+```
+
+```{r caspi-plot-ea, warning=FALSE}
+caspi_plot_all_vars(caspi_plot_data, variants, "years_of_schooling", "Years in full-time education", limits = c(0,20))
 ```
 
 # References
