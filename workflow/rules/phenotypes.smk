@@ -15,7 +15,6 @@ rule create_ukb_parquets:
                            filename = config.get("basket_filename")),
         R_files = expand(f"{config.get('basket_path')}/{{filename}}.r",
                            filename = config.get("basket_filename")),
-        phenotypes = f"{TEMP_DIR}/phenotypes/phenotypes.txt"
     output:
         f"{TEMP_DIR}/phenotypes/ukb_parquet/{{parquet_names}}.parquet"
     threads: 96
