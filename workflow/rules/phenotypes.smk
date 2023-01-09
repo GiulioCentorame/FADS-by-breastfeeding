@@ -1,3 +1,8 @@
+def phenotypes_parquets:
+    checkpoint_output = checkpoints.create_ukb_parquets.get(**wildcards).output[0]
+    return expand(f"{TEMP_DIR}/phenotypes/ukb_parquet/{{parquet}}.parquet",
+                  parquet = glob_wildcard(os.path.join(checkpoint_output, "{parquet}.parquet".parquet)))
+
 rule strip_comments:
     input:
         "config/variables.txt"
@@ -6,7 +11,7 @@ rule strip_comments:
     shell:
         "grep -v '#' {input} > {output}"
 
-rule create_ukb_parquets:
+checkpoint create_ukb_parquets:
     # Extract the variables of interest in the UKB
     input:
         tab_files = expand(f"{config.get('basket_path')}/{{filename}}.tab",
@@ -16,7 +21,7 @@ rule create_ukb_parquets:
         R_files = expand(f"{config.get('basket_path')}/{{filename}}.r",
                            filename = config.get("basket_filename")),
     output:
-        f"{TEMP_DIR}/phenotypes/ukb_parquet/{{parquet_names}}.parquet"
+        directory(f"{TEMP_DIR}/phenotypes/ukb_parquet/")
     threads: 96
     params:
         output_path= f"{TEMP_DIR}/phenotypes/ukb_parquet/"
