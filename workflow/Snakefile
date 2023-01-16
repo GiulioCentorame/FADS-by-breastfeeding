@@ -34,7 +34,6 @@ if TEMP_DIR != "temp":
 rule all:
     input:
         clean_data = f"{TEMP_DIR}/phenotypes/phenotypes_clean.tsv"
-        f"{TEMP_DIR}/variants/variants.snp-stats"
 
 include: "rules/phenotypes.smk"
 
