@@ -1,4 +1,4 @@
-def phenotypes_parquets:
+def phenotypes_parquets(wildcards):
     checkpoint_output = checkpoints.create_ukb_parquets.get(**wildcards).output[0]
     return expand(f"{TEMP_DIR}/phenotypes/ukb_parquet/{{parquet}}.parquet",
                   parquet = glob_wildcard(os.path.join(checkpoint_output, "{parquet}.parquet".parquet)))
