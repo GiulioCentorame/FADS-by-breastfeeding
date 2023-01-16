@@ -33,7 +33,7 @@ checkpoint create_ukb_parquets:
 
 rule select_and_clean_phenotypes:
     input:
-        data =  phenotype_parquets,
+        data =  phenotypes_parquets,
         derived_script = "workflow/scripts/levels.R",
         withdrawals = config.get("withdrawals"),
         std_exclusions = config.get("std_exclusions")
