@@ -33,12 +33,15 @@ checkpoint create_ukb_parquets:
 
 rule select_and_clean_phenotypes:
     input:
-        data = f"{TEMP_DIR}/phenotypes/phenotypes_raw.tsv",
+        data = expand(f"{TEMP_DIR}/phenotypes/ukb_parquet/{{parquet}}.parquet",
+                  parquet = glob_wildcard(os.path.join(checkpoint_output, "{parquet}.parquet".parquet))),
         derived_script = "workflow/scripts/levels.R",
         withdrawals = config.get("withdrawals"),
         std_exclusions = config.get("std_exclusions")
     output:
         clean_data = f"{TEMP_DIR}/phenotypes/phenotypes_clean.tsv"
+    params:
+        output_path= f"{TEMP_DIR}/phenotypes/ukb_parquet/"
     conda:
         "../envs/clean_phenotypes.yaml"
     script:
