@@ -4,6 +4,8 @@ library(ukbtools)
 library(arrow)
 library(dplyr)
 
+save.image("debug.RData")
+
 extract_ukb <- function(basket_path,
                         phenotypes_file,
                         basket_names,
