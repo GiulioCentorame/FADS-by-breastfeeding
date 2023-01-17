@@ -8,7 +8,10 @@ extract_ukb <- function(basket_path,
                         phenotypes_file,
                         basket_names,
                         output_file_path) {
-  # Load UKB data
+  # Declare list
+  ukb_data <- list()
+
+  # Load UKB data and populate list with it
 
   for (basket in basket_names) {
     ukb_data[[basket]] <-
