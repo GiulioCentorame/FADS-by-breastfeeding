@@ -26,6 +26,7 @@ extract_ukb <- function(basket_path,
   ) %>%
     arrow::write_dataset(
       dataset = .,
+      format = "parquet",
       path = output_path
     )
 }
