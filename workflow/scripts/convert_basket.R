@@ -10,8 +10,6 @@ extract_ukb <- function(basket_path,
                         output_file_path) {
   # Load UKB data
 
-  phenotypes <- scan(phenotypes_file)
-
   for (basket in basket_names) {
     ukb_data[[basket]] <-
       ukb_df(basket,
@@ -35,6 +33,5 @@ extract_ukb <- function(basket_path,
 extract_ukb(
   basket_path = snakemake@config$basket_path,
   basket_names = snakemake@config$basket_filenames,
-  phenotypes_file = snakemake@input$phenotypes,
   output_file_path = snakemake@output$output
 )
