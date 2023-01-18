@@ -37,6 +37,6 @@ extract_ukb <- function(basket_path,
 # Run
 extract_ukb(
   basket_path = snakemake@config$basket_path,
-  basket_names = snakemake@config$basket_filenames,
+  basket_names = snakemake@config$basket_filename,
   output_file_path = snakemake@output$output
 )
