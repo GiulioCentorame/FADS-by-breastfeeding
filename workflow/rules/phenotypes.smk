@@ -24,8 +24,8 @@ checkpoint create_ukb_parquets:
         directory(f"{TEMP_DIR}/phenotypes/ukb_parquet/")
     envmodules:
         "r/4.2.1-foss-2021a"
-    conda:
-        "../envs/r.yaml"
+    # conda:
+    #     "../envs/r.yaml"
     threads: 96
     params:
         output_path= f"{TEMP_DIR}/phenotypes/ukb_parquet/"
@@ -47,7 +47,7 @@ rule select_and_clean_phenotypes:
         output_path= f"{TEMP_DIR}/phenotypes/ukb_parquet/"
     envmodules:
         "r/4.2.1-foss-2021a"
-    conda:
-        "../envs/r.yaml"
+    # conda:
+    #     "../envs/r.yaml"
     script:
         "../scripts/clean_phenotypes.R"
