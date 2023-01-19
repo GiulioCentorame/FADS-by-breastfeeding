@@ -30,7 +30,7 @@ checkpoint create_phenotypes_file:
 
 rule select_and_clean_phenotypes:
     input:
-        data =  phenotypes_parquets,
+        data = f"{TEMP_DIR}/phenotypes/all_phenotypes.rda"
         derived_script = "workflow/scripts/levels.R",
         withdrawals = config.get("withdrawals"),
         std_exclusions = config.get("std_exclusions")
