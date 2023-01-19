@@ -1,8 +1,3 @@
-def phenotypes_parquets(wildcards):
-    checkpoint_output = checkpoints.create_ukb_parquets.get(**wildcards).output[0]
-    return expand(f"{TEMP_DIR}/phenotypes/ukb_parquet/{{parquet}}.parquet",
-                  parquet = glob_wildcard(os.path.join(checkpoint_output, "{parquet}.parquet".parquet)))
-
 rule strip_comments:
     input:
         "config/variables.txt"
@@ -11,7 +6,7 @@ rule strip_comments:
     shell:
         "grep -v '#' {input} > {output}"
 
-checkpoint create_ukb_parquets:
+checkpoint create_phenotypes_file:
     # Extract the variables of interest in the UKB
     input:
         tab_files = expand(f"{config.get('basket_path')}/{{filename}}.tab",
@@ -21,14 +16,12 @@ checkpoint create_ukb_parquets:
         R_files = expand(f"{config.get('basket_path')}/{{filename}}.r",
                            filename = config.get("basket_filename")),
     output:
-        directory(f"{TEMP_DIR}/phenotypes/ukb_parquet/")
+        rda_file = f"{TEMP_DIR}/phenotypes/all_phenotypes.rda"
     envmodules:
         "r/4.2.1-foss-2021a"
     # conda:
     #     "../envs/r.yaml"
     threads: 96
-    params:
-        output_path= f"{TEMP_DIR}/phenotypes/ukb_parquet/"
     resources:
         mem_mb=1000000,
         time_min=400
@@ -37,14 +30,12 @@ checkpoint create_ukb_parquets:
 
 rule select_and_clean_phenotypes:
     input:
-        data =  phenotypes_parquets,
+        data = f"{TEMP_DIR}/phenotypes/all_phenotypes.rda"
         derived_script = "workflow/scripts/levels.R",
         withdrawals = config.get("withdrawals"),
         std_exclusions = config.get("std_exclusions")
     output:
         clean_data = f"{TEMP_DIR}/phenotypes/phenotypes_clean.tsv"
-    params:
-        output_path= f"{TEMP_DIR}/phenotypes/ukb_parquet/"
     envmodules:
         "r/4.2.1-foss-2021a"
     # conda:

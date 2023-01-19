@@ -33,7 +33,7 @@ if TEMP_DIR != "temp":
 
 rule all:
     input:
-        clean_data = f"{TEMP_DIR}/phenotypes/phenotypes_clean.tsv"
+        rda_file = f"{TEMP_DIR}/phenotypes/all_phenotypes.rda"
 
 include: "rules/phenotypes.smk"
 
