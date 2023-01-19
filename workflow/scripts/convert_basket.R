@@ -1,7 +1,6 @@
 # HACK use conda env when this gets fixed: https://github.com/conda-forge/r-arrow-feedstock/issues/56
 renv::activate()
 library(ukbtools)
-library(arrow)
 library(dplyr)
 
 save.image("debug.RData")
@@ -27,16 +26,12 @@ extract_ukb <- function(basket_path,
     full_join,
     by = "eid"
   ) %>%
-    arrow::write_dataset(
-      dataset = .,
-      format = "parquet",
-      path = output_path
-    )
+    base::save(., file = output_file_path)
 }
 
 # Run
 extract_ukb(
   basket_path = snakemake@config$basket_path,
   basket_names = snakemake@config$basket_filename,
-  output_file_path = snakemake@output$output
+  output_file_path = snakemake@output$rda_file
 )
