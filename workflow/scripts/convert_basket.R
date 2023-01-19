@@ -12,6 +12,19 @@ extract_ukb <- function(basket_path,
   # Declare list
   ukb_data <- list()
 
+  # Check that output folder exists, if not, create it
+  # NOTE will print a warning if it exists
+
+  output_file_path %>%
+    stringi::stri_replace_last_regex(
+      .,
+      "\\/[^/]+\\.rds$", # matches just the file name
+      "" # swap with empty string
+    ) %>%
+    dir.create(.,
+      recursive = TRUE
+    )
+
   # Load UKB data and populate list with it
 
   for (basket in basket_names) {
@@ -22,16 +35,18 @@ extract_ukb <- function(basket_path,
       )
   }
 
-  purrr::reduce(ukb_data,
-    full_join,
-    by = "eid"
-  ) %>%
-    base::save(., file = output_file_path)
+  ukb <-
+    purrr::reduce(ukb_data,
+      full_join,
+      by = "eid"
+    )
+
+  base::save(ukb, file = output_file_path)
 }
 
 # Run
 extract_ukb(
   basket_path = snakemake@config$basket_path,
   basket_names = snakemake@config$basket_filename,
-  output_file_path = snakemake@output$rda_file
+  output_file_path = snakemake@output$rds_file
 )

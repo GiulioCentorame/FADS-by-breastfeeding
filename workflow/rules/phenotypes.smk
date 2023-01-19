@@ -16,7 +16,7 @@ rule create_phenotypes_file:
         R_files = expand(f"{config.get('basket_path')}/{{filename}}.r",
                            filename = config.get("basket_filename")),
     output:
-        rda_file = f"{TEMP_DIR}/phenotypes/all_phenotypes.rda"
+        rda_file = f"{TEMP_DIR}/phenotypes/all_phenotypes.rds"
     envmodules:
         "r/4.2.1-foss-2021a"
     # conda:
@@ -30,7 +30,7 @@ rule create_phenotypes_file:
 
 rule select_and_clean_phenotypes:
     input:
-        data = f"{TEMP_DIR}/phenotypes/all_phenotypes.rda",
+        data = f"{TEMP_DIR}/phenotypes/all_phenotypes.rds",
         derived_script = "workflow/scripts/levels.R",
         withdrawals = config.get("withdrawals"),
         std_exclusions = config.get("std_exclusions")
