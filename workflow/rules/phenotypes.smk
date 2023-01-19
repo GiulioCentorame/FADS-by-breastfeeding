@@ -6,7 +6,7 @@ rule strip_comments:
     shell:
         "grep -v '#' {input} > {output}"
 
-checkpoint create_phenotypes_file:
+rule create_phenotypes_file:
     # Extract the variables of interest in the UKB
     input:
         tab_files = expand(f"{config.get('basket_path')}/{{filename}}.tab",
