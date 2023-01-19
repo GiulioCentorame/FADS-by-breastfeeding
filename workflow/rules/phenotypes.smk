@@ -30,7 +30,7 @@ checkpoint create_ukb_parquets:
     params:
         output_path= f"{TEMP_DIR}/phenotypes/ukb_parquet/"
     resources:
-        mem_mb=100000,
+        mem_mb=1000000,
         time_min=400
     script:
         "../scripts/convert_basket.R"
