@@ -25,8 +25,6 @@ rule create_phenotypes_file:
     resources:
         mem_mb=1000000,
         time_min=400
-    params:
-        directory = f"{TEMP_DIR}/phenotypes/"
     script:
         "../scripts/convert_basket.R"
 
