@@ -41,7 +41,7 @@ extract_ukb <- function(basket_path,
       by = "eid"
     )
 
-  base::save(ukb, file = output_file_path)
+  saveRDS(ukb, file = output_file_path)
 }
 
 # Run
