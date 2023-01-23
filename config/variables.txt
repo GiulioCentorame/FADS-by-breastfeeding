@@ -24,6 +24,56 @@
 20016
 # Date when completed FI test online
 20135
+## Matrix pattern completion (imaging clinics)
+# correct
+6373
+# viewed
+6374
+## Reaction time
+20023
+## Tower rearranging (imaging clinics)
+# correct
+21004
+# attempted
+6383
+## Numeric memory
+# assessment centre
+4282
+# online
+20240
+# Date when numeric memory test completed online
+20138
+## Pairs matching
+# Assessment centre (earliest available instance for most)
+399
+# online
+20240
+# Date when pairs matching completed online
+20138
+## Paired associate learning
+20197
+## Reaction time (AC only)
+20023
+## Prospective memory
+20018
+## Symbol digit substitution
+# Assessment centre
+23324
+23323
+# Online
+20159
+20195
+# Date at completion
+20137
+## Trail making
+# Imaging clinics
+6348
+6349
+# Online
+20156
+20157
+# Date at completion
+20136
 ## Educational attainment
 # Age completed full time Education
 845
