@@ -1,0 +1,9 @@
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - r-fastverse
+  - r-dtplyr
+  - r-dplyr
+  - r-lubridate
+  - r-stringr

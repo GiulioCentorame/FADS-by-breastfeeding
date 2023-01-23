@@ -1,0 +1,51 @@
+## Demographics
+# Month of birth
+52
+# Year of birth
+34
+# Reported sex
+31
+# Genetic sex
+22001
+# Breastfed or not
+1677
+# Principal components
+22009
+## Intelligence
+#FI full score
+20191
+20016
+# Date when completed FI test online
+20135
+# Age when attended assessment centre
+21003
+## Educational attainment
+# Age completed full time Education
+845
+# Qualifications (as of assessment centre)
+6138
+## Townsend deprivation index
+189
+## Multiple deprivation
+# MI England
+26410
+# MI Scotland
+26427
+# MI Wales
+26426
+## Metabolomics
+# Total DHA
+23450
+# DHA to total fatty acid percentage
+23457
+# DHA (QC)
+23757
+# DHA enhanced PRS
+26231
+## QC genetics
+# Batch
+22000
+# Plate
+22004
+# Well
+22008
