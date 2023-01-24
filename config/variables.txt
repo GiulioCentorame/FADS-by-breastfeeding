@@ -80,12 +80,15 @@
 # Qualifications (as of assessment centre)
 6138
 ############## Medical conditions #############
-## Allegy, rhinitis, eczema etc.
-6152
-## Vascular problems
-6150
+## Allegy, rhinitis, eczema etc. (age)
+3761
+## Vascular problems (age)
+3627
+3894
+4056
+2966
 ## Diabetes
-2443
+2976
 ############## Cardiometabolic traits #############
 ## Cholesterol
 # LDL
