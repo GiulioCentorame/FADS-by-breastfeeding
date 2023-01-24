@@ -8,6 +8,7 @@ clean_phenotypes <- function(data_path,
                              field_ids_path,
                              std_exclusions_path,
                              withdrawals_path,
+                             related_individuals_path,
                              output_path) {
   # Open function to assign levels
   data <- readRDS(data_path) %>%
