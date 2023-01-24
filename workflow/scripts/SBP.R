@@ -10,6 +10,10 @@
 
 library(dplyr)
 
+
+# Save image for debugging
+save.image("debug.RData")
+
 extract_SBP <- function(raw_data_path,
                         output_path) {
   ######################
@@ -384,6 +388,6 @@ extract_SBP <- function(raw_data_path,
 }
 
 extract_SBP(
-  raw_data_path = snakemake@input,
-  output_path = snakemake@output
+  raw_data_path = snakemake@input[[1]],
+  output_path = snakemake@output[[1]]
 )
