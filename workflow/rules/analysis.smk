@@ -5,7 +5,7 @@ rule merge_phenotypes_and_variants:
         SBP = f"{TEMP_DIR}/phenotypes/sbp.tsv",
         DBP = f"{TEMP_DIR}/phenotypes/dbp.tsv"
     output:
-        merged = f"{TEMP_DIR}/merged/data.tsv"
+        merged = f"{TEMP_DIR}/merged/data.rds"
     conda:
         "../envs/clean_phenotypes.yaml"
     script:

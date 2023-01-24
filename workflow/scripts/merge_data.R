@@ -38,7 +38,7 @@ merge_data <- function(phenotypes_path,
     left_join(DBP_data, by = "eid")
 
   # Write to disk
-  write_tsv(merged_data, output_path)
+  saveRDS(merged_data, output_path)
 }
 
 merge_data(
