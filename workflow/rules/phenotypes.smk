@@ -47,3 +47,19 @@ rule select_phenotypes_and_participants:
         mem_mb=500000
     script:
         "../scripts/subset_phenotypes.R"
+
+rule clean_SBP:
+    input:
+        f"{config.get('basket_path')}/ukb39610.csv"
+    output:
+        f"{TEMP_DIR}/phenotypes/sbp.tsv"
+    script:
+        "../scripts/SBP.R"
+
+rule clean_DBP:
+    input:
+        f"{config.get('basket_path')}/ukb39610.csv"
+    output:
+        f"{TEMP_DIR}/phenotypes/dbp.tsv"
+    script:
+        "../scripts/DBP.R"

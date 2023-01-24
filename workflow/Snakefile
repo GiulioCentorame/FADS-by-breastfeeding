@@ -35,7 +35,9 @@ rule all:
     input:
         f"{TEMP_DIR}/phenotypes/vars_subset.rds",
         f"{TEMP_DIR}/variants/variants.raw",
-        f"{TEMP_DIR}/variants/variants.snp-stats"
+        f"{TEMP_DIR}/variants/variants.snp-stats",
+        f"{TEMP_DIR}/phenotypes/dbp.tsv",
+        f"{TEMP_DIR}/phenotypes/sbp.tsv"
 
 include: "rules/phenotypes.smk"
 
