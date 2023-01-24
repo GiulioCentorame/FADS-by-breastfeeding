@@ -29,7 +29,7 @@ clean_phenotypes <- function(data_path,
     select(eid, contains(paste0("_f", field_ids, "_"))) %>%
     filter(
       # Standard genetic QC exclusions
-      !(eid %in% std_exclusions$IID),
+      !(eid %in% std_exclusions),
       # Withdrawals
       !(eid %in% withdrawals),
       !(eid %in% related_individuals)
