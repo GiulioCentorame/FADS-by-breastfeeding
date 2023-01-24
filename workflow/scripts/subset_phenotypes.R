@@ -8,7 +8,7 @@ clean_phenotypes <- function(data_path,
                              field_ids_path,
                              std_exclusions_path,
                              withdrawals_path,
-                             output) {
+                             output_path) {
   # Open function to assign levels
   data <- readRDS(data_path) %>%
     lazy_dt()
@@ -36,7 +36,7 @@ clean_phenotypes <- function(data_path,
 
   # Write data
   data_filtered %>%
-    saveRDS(., file = output)
+    saveRDS(., file = output_path)
 }
 
 clean_phenotypes(
@@ -44,5 +44,6 @@ clean_phenotypes(
   field_ids_path = snakemake@input$field_ids,
   std_exclusions_path = snakemake@input$std_exclusions,
   withdrawals_path = snakemake@input$withdrawals,
+  related_individuals_path = snakemake@input$related_individuals,
   output_path = snakemake@output$filtered_data
 )
