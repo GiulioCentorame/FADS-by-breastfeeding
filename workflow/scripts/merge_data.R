@@ -30,7 +30,10 @@ merge_data <- function(phenotypes_path,
   # Outer join
   merged_data <-
     phenotypes %>%
-    full_join(variants, by = c("eid" = "IID")) %>%
+    # We already operated the exclusions on the main data
+    # so inner join allows to retain only the ones we
+    # have not excluded yet
+    inner_join(variants, by = c("eid" = "IID")) %>%
     left_join(SBP_data, by = "eid") %>%
     left_join(DBP_data, by = "eid")
 
