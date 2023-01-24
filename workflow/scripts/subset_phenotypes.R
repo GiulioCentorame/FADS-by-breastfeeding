@@ -4,6 +4,8 @@ library(dtplyr)
 library(dplyr, warn.conflicts = FALSE)
 library(readr)
 
+save.image("debug.RData")
+
 clean_phenotypes <- function(data_path,
                              field_ids_path,
                              std_exclusions_path,
