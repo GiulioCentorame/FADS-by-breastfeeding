@@ -24,7 +24,7 @@ clean_phenotypes <- function(data_path,
   # Extract fields of interest
   data_filtered <-
     data %>%
-    select(contains(paste0("_f", field_ids, "_"))) %>%
+    select(eid, contains(paste0("_f", field_ids, "_"))) %>%
     filter(
       # Standard genetic QC exclusions
       !(eid %in% std_exclusions$IID),
