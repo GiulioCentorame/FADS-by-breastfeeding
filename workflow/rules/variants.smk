@@ -22,7 +22,7 @@ rule extract_FADS_variants_allelic_dosage:
         --bgen {input.bgen} ref-first \
         --export A \
         --sample {input.sample} \
-        --snps rs174575, rs1535, rs174583, rs174537, rs174561, rs3834458 \
+        --snps rs174575, rs1535, rs174583 \
         --out {params.output_prefix}
         """
 
@@ -40,7 +40,7 @@ rule compute_FADS_variants_summary_stats:
         """
         bgenix \
         -g {input.bgen} \
-        -incl-rsids rs174575 rs1535 rs174583 rs174537 rs174561 rs3834458 | \
+        -incl-rsids rs174575 rs1535 rs174583 | \
         qctool \
         -g - \
         -filetype bgen \
