@@ -1,7 +1,9 @@
 rule merge_phenotypes_and_variants:
     input:
-        phenotypes = f"{TEMP_DIR}/phenotypes/phenotypes_clean.tsv",
-        variants = f"{TEMP_DIR}/variants/variants.raw"
+        phenotypes = f"{TEMP_DIR}/phenotypes/vars_subset.tsv",
+        variants = f"{TEMP_DIR}/variants/variants.raw",
+        SBP = f"{TEMP_DIR}/phenotypes/sbp.tsv",
+        DBP = f"{TEMP_DIR}/phenotypes/dbp.tsv"
     output:
         merged = f"{TEMP_DIR}/merged/data.tsv"
     conda:

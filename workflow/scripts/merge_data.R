@@ -1,28 +1,47 @@
 library(data.table)
+library(dtplyr)
+library(dplyr, warn.conflicts = FALSE)
+library(readr)
 
-merge_data <- function(phenotypes_path, variants_path, output_path) {
+save.image("debug.RData")
+
+merge_data <- function(phenotypes_path,
+                       SBP_path,
+                       DBP_path,
+                       variants_path,
+                       output_path) {
   # Read data in
-  phenotypes <- fread(phenotypes_path)
+  phenotypes <- readRDS(phenotypes_path)
 
-  variants <- fread(variants_path)
+  variants <- read_table(variants_path)
 
-  # Outer join
-
-  merged_data <-
-    merge(phenotypes,
-      variants[, .SD, .SDcols = !c("FID", "PAT", "MAT", "SEX", "PHENOTYPE")],
-      by.x = "eid",
-      by.y = "IID",
-      # Perform inner join
-      all = FALSE
+  SBP_data <- read_tsv(SBP_path) %>%
+    rename(
+      Age_SBP = Age,
+      Centre_SBP = Centre
     )
 
+  DBP_data <- read_tsv(DBP_path) %>%
+    rename(
+      Age_DBP = Age,
+      Centre_DBP = Centre
+    )
+
+  # Outer join
+  merged_data <-
+    phenotypes %>%
+    full_join(variants, by = c("eid" = "IID")) %>%
+    left_join(SBP, by = "eid") %>%
+    left_join(DBP, by = "eid")
+
   # Write to disk
-  fwrite(merged_data, output_path, quote = FALSE, sep = "\t")
+  write_tsv(merged_data, output_path)
 }
 
 merge_data(
   phenotypes_path = snakemake@input$phenotypes,
   variants_path = snakemake@input$variants,
+  SBP_path = snakemake@input$SBP,
+  DBP_path = snakemake@input$DBP,
   output_path = snakemake@output$merged
 )

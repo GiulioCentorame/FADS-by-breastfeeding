@@ -3,6 +3,7 @@ renv::activate()
 library(ukbtools)
 library(dplyr)
 
+# Save image for debugging
 save.image("debug.RData")
 
 extract_ukb <- function(basket_path,
