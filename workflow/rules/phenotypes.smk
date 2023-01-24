@@ -2,7 +2,7 @@ rule strip_comments:
     input:
         "config/variables.txt"
     output:
-        f"{TEMP_DIR}/phenotypes/phenotypes.txt"
+        f"{TEMP_DIR}/phenotypes/field_ids.txt"
     shell:
         "grep -v '#' {input} > {output}"
 
@@ -16,7 +16,7 @@ rule create_phenotypes_file:
         R_files = expand(f"{config.get('basket_path')}/{{filename}}.r",
                            filename = config.get("basket_filename")),
     output:
-        rds_file = f"{TEMP_DIR}/phenotypes/all_phenotypes.rds"
+        rds_file = temp(f"{TEMP_DIR}/phenotypes/all_phenotypes.rds")
     envmodules:
         "r/4.2.1-foss-2021a"
     # conda:
@@ -24,21 +24,26 @@ rule create_phenotypes_file:
     threads: 96
     resources:
         mem_mb=1000000,
+        disk_mb=4000,
         time_min=400
     script:
         "../scripts/convert_basket.R"
 
-rule select_and_clean_phenotypes:
+rule select_phenotypes_and_participants:
     input:
         data = f"{TEMP_DIR}/phenotypes/all_phenotypes.rds",
-        derived_script = "workflow/scripts/levels.R",
+        field_ids = f"{TEMP_DIR}/phenotypes/field_ids.txt",
         withdrawals = config.get("withdrawals"),
-        std_exclusions = config.get("std_exclusions")
+        std_exclusions = config.get("std_exclusions"),
+        related_individuals = config.get("related_individuals")
     output:
-        clean_data = f"{TEMP_DIR}/phenotypes/phenotypes_clean.tsv"
+        filtered_data = f"{TEMP_DIR}/phenotypes/vars_subset.rds"
     envmodules:
         "r/4.2.1-foss-2021a"
     # conda:
     #     "../envs/r.yaml"
+    threads: 96
+    resources:
+        mem_mb=500000
     script:
-        "../scripts/clean_phenotypes.R"
+        "../scripts/subset_phenotypes.R"
