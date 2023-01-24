@@ -384,7 +384,9 @@ extract_SBP <- function(raw_data_path,
   ###################
   ### Write files ###
   ###################
-  write.table(ukb6221_SBP_0, output_path, row.names = F, sep = "\t", quote = F, na = "")
+  ukb6221_SBP_0 %>%
+    select(eid, SBP, Age, Centre) %>%
+    write.table(., output_path, row.names = F, sep = "\t", quote = F, na = "")
 }
 
 extract_SBP(
