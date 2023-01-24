@@ -31,8 +31,8 @@ merge_data <- function(phenotypes_path,
   merged_data <-
     phenotypes %>%
     full_join(variants, by = c("eid" = "IID")) %>%
-    left_join(SBP, by = "eid") %>%
-    left_join(DBP, by = "eid")
+    left_join(SBP_data, by = "eid") %>%
+    left_join(DBP_data, by = "eid")
 
   # Write to disk
   write_tsv(merged_data, output_path)
