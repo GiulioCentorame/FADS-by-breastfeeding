@@ -15,7 +15,7 @@ rule extract_FADS_variants_allelic_dosage:
     resources:
     # HACK find a less memory-intensive way to get this
     # Potentially bgenix + plink2?
-        mem_mb = 50000
+        mem_mb = 500000
     shell:
         """
         plink2 \
