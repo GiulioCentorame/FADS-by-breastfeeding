@@ -19,8 +19,13 @@ clean_phenotypes <- function(data_path,
   field_ids <- read_lines(field_ids_path)
 
   # Load file lists
-  std_exclusions <- read_lines(std_exclusions_path)
+  # Space-delimited file
+  std_exclusions <- read_delim(std_exclusions_path,
+    delim = " "
+  )
+  # .csv but it's one line per exclusion
   withdrawals <- read_lines(withdrawals_path)
+  # same
   related_individuals <- read_lines(related_individuals_path)
 
   # Extract fields of interest
@@ -29,7 +34,7 @@ clean_phenotypes <- function(data_path,
     select(eid, contains(paste0("_f", field_ids, "_"))) %>%
     filter(
       # Standard genetic QC exclusions
-      !(eid %in% std_exclusions),
+      !(eid %in% std_exclusions$IID),
       # Withdrawals
       !(eid %in% withdrawals),
       !(eid %in% related_individuals)
