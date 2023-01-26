@@ -16,7 +16,7 @@ rule create_phenotypes_file:
         R_files = expand(f"{config.get('basket_path')}/{{filename}}.r",
                            filename = config.get("basket_filename")),
     output:
-        rds_file = temp(f"{TEMP_DIR}/phenotypes/all_phenotypes.rds")
+        rds_file = f"{TEMP_DIR}/phenotypes/all_phenotypes.rds"
     envmodules:
         "r/4.2.1-foss-2021a"
     # conda:
