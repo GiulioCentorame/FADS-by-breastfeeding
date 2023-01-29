@@ -82,6 +82,9 @@
 # Qualifications (as of assessment centre)
 6138
 ############## Medical conditions #############
+# Any med condition
+6150
+6152
 ## Allegy, rhinitis, eczema etc. (age)
 3761
 ## Vascular problems (age)
