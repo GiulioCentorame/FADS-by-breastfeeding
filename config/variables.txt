@@ -83,6 +83,7 @@
 6138
 ############## Medical conditions #############
 # Any med condition
+2443
 6150
 6152
 ## Allegy, rhinitis, eczema etc. (age)
