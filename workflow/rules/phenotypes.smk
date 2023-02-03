@@ -35,7 +35,8 @@ rule select_phenotypes_and_participants:
         field_ids = f"{TEMP_DIR}/phenotypes/field_ids.txt",
         withdrawals = config.get("withdrawals"),
         std_exclusions = config.get("std_exclusions"),
-        related_individuals = config.get("related_individuals")
+        related_individuals = config.get("related_individuals"),
+        nonwhitebritish = config.get("nonwhitebritish")
     output:
         filtered_data = f"{TEMP_DIR}/phenotypes/vars_subset.rds"
     envmodules:

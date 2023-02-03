@@ -11,6 +11,7 @@ clean_phenotypes <- function(data_path,
                              std_exclusions_path,
                              withdrawals_path,
                              related_individuals_path,
+                             nonwhitebritish_path,
                              output_path) {
   # Open function to assign levels
   data <- readRDS(data_path) %>%
@@ -21,6 +22,9 @@ clean_phenotypes <- function(data_path,
   # Load file lists
   # Space-delimited file
   std_exclusions <- read_delim(std_exclusions_path,
+    delim = " "
+  )
+  nonwhitebritish <- read_delim(nonwhitebritish_path,
     delim = " "
   )
   # .csv but it's one line per exclusion
@@ -37,7 +41,8 @@ clean_phenotypes <- function(data_path,
       !(eid %in% std_exclusions$IID),
       # Withdrawals
       !(eid %in% withdrawals),
-      !(eid %in% related_individuals)
+      !(eid %in% related_individuals),
+      !(eid %in% nonwhitebritish$IID)
     ) %>%
     # Run transformation
     as_tibble()
@@ -53,5 +58,6 @@ clean_phenotypes(
   std_exclusions_path = snakemake@input$std_exclusions,
   withdrawals_path = snakemake@input$withdrawals,
   related_individuals_path = snakemake@input$related_individuals,
+  nonwhitebritish_path = snakemake@input$nonwhitebritish,
   output_path = snakemake@output$filtered_data
 )
