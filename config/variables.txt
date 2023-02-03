@@ -96,6 +96,7 @@
 ## Diabetes
 2976
 2986
+4041
 ############## Cardiometabolic traits #############
 ## Cholesterol
 # LDL
