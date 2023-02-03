@@ -82,19 +82,18 @@
 # Qualifications (as of assessment centre)
 6138
 ############## Medical conditions #############
-# Any med condition
-2443
-6150
-6152
 ## Allegy, rhinitis, eczema etc. (age)
 3761
-## Vascular problems (age)
+## Vascular problems
 3627
 3894
 4056
 2966
+6150
+6152
 ## Diabetes
 2976
+2443
 2986
 4041
 ############## Cardiometabolic traits #############
