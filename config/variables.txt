@@ -96,6 +96,7 @@
 2443
 2986
 4041
+120007
 ############## Cardiometabolic traits #############
 ## Cholesterol
 # LDL
@@ -114,6 +115,9 @@
 # Meds for blood pressure
 6153
 6177
+# Meds for diabetes
+6177
+6153
 ############## Fitness ###############
 ## Children fathered
 2405
