@@ -33,7 +33,7 @@ if TEMP_DIR != "temp":
 
 rule all:
     input:
-        f"{TEMP_DIR}/merged/data.rds"
+        f"{TEMP_DIR}/clean/data.RData"
 
 include: "rules/phenotypes.smk"
 
