@@ -128,34 +128,6 @@ clean_phenotypes <- function(data_path,
     " participants with missing data"
   )
 
-
-
-  # # 308 k cases with strict filtering
-  # # FIXME this gets a stroke whenever I run it
-  # #breastfeeding_strict <-
-  # data %>%
-  #   select(eid, starts_with("breastfed_as_a_baby")) %>%
-  #   longer_by_instance() %>%
-  #   drop_na() %>%
-  #   transmute(eid,
-  #          breastfed_as_a_baby = case_when(
-  #     breastfed_as_a_baby_f1677 == 1 ~ "Yes",
-  #     breastfed_as_a_baby_f1677 == 0 ~ "No",
-  #     breastfed_as_a_baby_f1677 == -1 ~ "Do not know",
-  #     breastfed_as_a_baby_f1677 == -3 ~ "Prefer not to answer"
-  #     ) %>%
-  #       as_factor() %>%
-  #       fct_relevel("Yes", "No", "Do not know", "Prefer not to answer")
-  #     ) %>%
-  #   group_by(eid) %>%
-  #   # Exclude cases with "do not know" or prefer not to answer
-  #   filter(!any(breastfed_as_a_baby == "Do not know"),
-  #          !any(breastfed_as_a_baby == "Prefer not to answer")) %>%
-  #   ungroup() %>%
-  #   distinct() %>%
-  #   group_by(eid) %>%
-  #   filter(n_distinct(breastfed_as_a_baby) == 1)
-
   # Variants
   data_variants <-
     data %>%
@@ -187,6 +159,19 @@ clean_phenotypes <- function(data_path,
         "genetic_principal_components_f22009_0_",
         "PC"
       )
+    )
+
+  ### Common data to all models
+
+  common_data <-
+    full_join(
+      data_variants,
+      breastfeeding_first_instance,
+      by = "eid"
+    ) %>%
+    full_join(
+      covariates,
+      by = "eid"
     )
 
   age_assessment_centre <-
@@ -1277,19 +1262,6 @@ clean_phenotypes <- function(data_path,
   test_duplicates(trailmaking_path_1)
   test_duplicates(trailmaking_path_2)
   test_duplicates(trailmaking_2_minus_1)
-
-  ### Common data to all models
-
-  common_data <-
-    full_join(
-      data_variants,
-      breastfeeding_first_instance,
-      by = "eid"
-    ) %>%
-    full_join(
-      covariates,
-      by = "eid"
-    )
 
   # Test double delivery mode contains both values
   test_dual_delivery(fluid_intelligence)
