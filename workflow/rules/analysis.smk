@@ -22,3 +22,13 @@ rule clean_phenotypes:
         "r/4.2.1-foss-2021a"
     script:
         "../scripts/clean_phenotypes.R"
+
+rule fit_models:
+    input:
+        data = f"{TEMP_DIR}/clean/data.RData"
+    output:
+        data = f"{TEMP_DIR}/clean/model_summaries.RData"
+    envmodules:
+        "r/4.2.1-foss-2021a"
+    script:
+        "../scripts/clean_phenotypes.R"
