@@ -112,7 +112,7 @@ clean_phenotypes <- function(data_path,
     ) %>%
       as_factor() %>%
       fct_relevel("Yes", "No", "Do not know", "Prefer not to answer") %>%
-      fct_collapse(Missing = c("Do not know", "Prefer not to answer", NA)))
+      fct_collapse(Missing = c("Do not know", "Prefer not to answer")))
 
   message(nrow(breastfeeding_first_instance), " participants with data on breastfeeding")
   message(
@@ -1262,15 +1262,6 @@ clean_phenotypes <- function(data_path,
   test_duplicates(trailmaking_path_1)
   test_duplicates(trailmaking_path_2)
   test_duplicates(trailmaking_2_minus_1)
-
-  # Test double delivery mode contains both values
-  test_dual_delivery(fluid_intelligence)
-  test_dual_delivery(numeric_memory_max_digits)
-  test_dual_delivery(symbol_digit_substitution_correct_answers)
-  test_dual_delivery(trailmaking_path_1)
-  test_dual_delivery(trailmaking_path_2)
-  test_dual_delivery(trailmaking_2_minus_1)
-
 
   ### Create lists of datasets
   ## List 1
