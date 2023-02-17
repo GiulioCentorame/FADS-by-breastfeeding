@@ -27,8 +27,11 @@ rule fit_models:
     input:
         data = f"{TEMP_DIR}/clean/data.RData"
     output:
-        data = f"{TEMP_DIR}/clean/model_summaries.RData"
+        output = f"{TEMP_DIR}/clean/model_summaries.RData"
+    threads: 96
+    resources:
+        mem_mb=500000
     envmodules:
         "r/4.2.1-foss-2021a"
     script:
-        "../scripts/clean_phenotypes.R"
+        "../scripts/fit_models.R"
