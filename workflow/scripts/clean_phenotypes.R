@@ -492,6 +492,7 @@ clean_phenotypes <- function(data_path,
       Age_DBP
     ) %>%
     transmute(
+      eid,
       dbp = scale(DBP),
       age = Age_DBP
     )
