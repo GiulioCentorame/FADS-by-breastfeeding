@@ -314,8 +314,9 @@ fit_models_recessive <- function(data_path,
   summary_stats_plots <-
     summary_stats %>%
     filter(
-      term %in% variants_recessive,
+      stringi::stri_detect_regex(term, "^rs"),
       breastfed_as_a_baby != "Missing"
+      # Match rsids
     ) %>%
     rename(
       variant = term,
