@@ -1313,6 +1313,7 @@ clean_phenotypes <- function(data_path,
   ## Write data
   base::save(
     variants,
+    variants_recessive,
     common_data,
     list_continuous_multiple_delivery_first_instance_breastfeeding,
     list_continuous_single_delivery_first_instance_breastfeeding,
