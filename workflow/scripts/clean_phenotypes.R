@@ -315,8 +315,9 @@ clean_phenotypes <- function(data_path,
     ungroup() %>%
     select(-c(instance, entry)) %>%
     distinct() %>%
-    rename(
-      years_of_schooling = qualifications_f6138,
+    transmute(
+      eid,
+      years_of_schooling = scale(qualifications_f6138),
       age = age_when_attended_assessment_centre_f21003
     ) %>%
     drop_na()
@@ -343,7 +344,8 @@ clean_phenotypes <- function(data_path,
     # Max age with that number of children, if there are ties
     filter(instance == max(instance)) %>%
     ungroup() %>%
-    transmute(eid,
+    transmute(
+      eid,
       number_of_offspring = case_when(
         # See Nicole's paper
         number_of_children_fathered_f2405 > 10 ~ 10,
@@ -378,10 +380,10 @@ clean_phenotypes <- function(data_path,
 
   number_of_offspring <-
     full_join(number_of_offspring_males, number_of_offspring_females) %>%
-    select(
+    transmute(
       eid,
       age,
-      number_of_offspring
+      number_of_offspring = scale(number_of_offspring)
     ) %>%
     drop_na()
 
@@ -404,8 +406,9 @@ clean_phenotypes <- function(data_path,
     filter(instance == min(instance, na.rm = TRUE)) %>%
     ungroup() %>%
     select(-instance) %>%
-    rename(
-      ldl_direct = ldl_direct_f30780,
+    transmute(
+      eid,
+      ldl_direct = scale(ldl_direct_f30780),
       age = age_when_attended_assessment_centre_f21003
     ) %>%
     drop_na()
@@ -428,8 +431,9 @@ clean_phenotypes <- function(data_path,
     filter(instance == min(instance, na.rm = TRUE)) %>%
     ungroup() %>%
     select(-instance) %>%
-    rename(
-      hdl_direct = hdl_cholesterol_f30760,
+    transmute(
+      eid,
+      hdl_direct = scale(hdl_cholesterol_f30760),
       age = age_when_attended_assessment_centre_f21003
     ) %>%
     drop_na()
@@ -453,8 +457,9 @@ clean_phenotypes <- function(data_path,
     filter(instance == min(instance, na.rm = TRUE)) %>%
     ungroup() %>%
     select(-instance) %>%
-    rename(
-      bmi = body_mass_index_bmi_f21001,
+    transmute(
+      eid,
+      bmi = scale(body_mass_index_bmi_f21001),
       age = age_when_attended_assessment_centre_f21003
     )
 
@@ -527,7 +532,8 @@ clean_phenotypes <- function(data_path,
       names_pattern = "(.+)_(.)_(.)"
     ) %>%
     drop_na() %>%
-    mutate(eid,
+    mutate(
+      eid,
       vascularheart_problems_diagnosed_by_doctor_f6150 = vascular_problems_coding[vascularheart_problems_diagnosed_by_doctor_f6150],
       reported = 1
     ) %>%
@@ -991,7 +997,8 @@ clean_phenotypes <- function(data_path,
     group_by(eid) %>%
     filter(instance == min(instance, na.rm = FALSE)) %>%
     ungroup() %>%
-    transmute(eid,
+    transmute(
+      eid,
       paired_associate_learning_correct_word_pairs = scale(number_of_word_pairs_correctly_associated_f20197),
       age = age_when_attended_assessment_centre_f21003
     ) %>%
