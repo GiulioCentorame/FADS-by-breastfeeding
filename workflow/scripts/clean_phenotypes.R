@@ -758,7 +758,7 @@ clean_phenotypes <- function(data_path,
   ) # 11,096 cases, 319,164 controls
 
   # Matrix pattern completion
-  proportion_correct_matrix_completion <-
+  correct_answers_matrix_completion <-
     data %>%
     select(
       eid,
@@ -768,18 +768,18 @@ clean_phenotypes <- function(data_path,
     ) %>%
     longer_by_instance() %>%
     drop_na() %>%
-    mutate(proportion_correct_matrix_completion = number_of_puzzles_correctly_solved_f6373 / number_of_puzzles_viewed_f6374) %>%
+    mutate(correct_answers_matrix_completion = number_of_puzzles_correctly_solved_f6373) %>%
     group_by(eid) %>%
     # Take first available instance
     filter(instance == min(instance, na.rm = TRUE)) %>%
     ungroup() %>%
     transmute(eid,
-      proportion_correct_matrix_completion = scale(proportion_correct_matrix_completion),
+      correct_answers_matrix_completion = scale(correct_answers_matrix_completion),
       age = age_when_attended_assessment_centre_f21003
     ) %>%
     drop_na()
 
-  message(count_participants_long_data(proportion_correct_matrix_completion), " participants with data on matrix pattern completion") # 19,365
+  message(count_participants_long_data(correct_answers_matrix_completion), " participants with data on matrix pattern completion") # 19,365
 
   # Reaction time
 
@@ -1261,7 +1261,7 @@ clean_phenotypes <- function(data_path,
   test_duplicates(stroke)
   test_duplicates(hayfever_rhinitis_eczema)
   test_duplicates(type2_diabetes)
-  test_duplicates(proportion_correct_matrix_completion)
+  test_duplicates(correct_answers_matrix_completion)
   test_duplicates(reaction_time_ms)
   test_duplicates(tower_rearranging_correct_answers)
   test_duplicates(numeric_memory_max_digits)
@@ -1299,7 +1299,7 @@ clean_phenotypes <- function(data_path,
       bmi = bmi,
       sbp = sbp,
       dbp = dbp,
-      proportion_correct_matrix_completion = proportion_correct_matrix_completion,
+      correct_answers_matrix_completion = correct_answers_matrix_completion,
       reaction_time_ms = reaction_time_ms,
       tower_rearranging_correct_answers = tower_rearranging_correct_answers,
       paired_associate_learning_correct_word_pairs = paired_associate_learning_correct_word_pairs,
