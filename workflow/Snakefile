@@ -33,7 +33,8 @@ if TEMP_DIR != "temp":
 
 rule all:
     input:
-        f"{TEMP_DIR}/clean/model_summaries.RData"
+        f"{TEMP_DIR}/clean/model_summaries_additive.RData",
+        f"{TEMP_DIR}/clean/model_summaries_recessive.RData"
 
 include: "rules/phenotypes.smk"
 

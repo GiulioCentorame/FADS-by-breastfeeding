@@ -51,6 +51,7 @@ clean_phenotypes <- function(data_path,
 
   # Define list of SNPs
   variants <- c("rs1535_A", "rs174575_C", "rs174583_C")
+  variants_recessive <- c("rs1535_GG", "rs174575_GG", "rs174583_TT")
 
   # Simple variables to compute
   data <-
@@ -138,9 +139,9 @@ clean_phenotypes <- function(data_path,
       rs174583_C
     ) %>%
     mutate(
-      rs1535_GG = (2 - rs1535_A),
-      rs174575_GG = (2 - rs174575_C),
-      rs174583_TT = (2 - rs174583_C)
+      rs1535_GG = round(2 - rs1535_A) == 2,
+      rs174575_GG = round(2 - rs174575_C) == 2,
+      rs174583_TT = round(2 - rs174583_C) == 2
     )
 
   # Covariates

@@ -56,8 +56,8 @@ nested_tibble_to_coeff_tibble <- function(data) {
 
 # MAIN
 
-fit_models <- function(data_path,
-                       output_path) {
+fit_models_recessive <- function(data_path,
+                                 output_path) {
   base::load(data_path)
 
   # Add common data
@@ -68,7 +68,7 @@ fit_models <- function(data_path,
 
   # Unadjusted
   models_binary_unadj <-
-    variants %>%
+    variants_recessive %>%
     map(
       \(SNP)
       data_binary %>%
@@ -84,7 +84,7 @@ fit_models <- function(data_path,
     )
 
   models_binary_age_sex <-
-    variants %>%
+    variants_recessive %>%
     map(
       \(SNP)
       data_binary %>%
@@ -101,7 +101,7 @@ fit_models <- function(data_path,
 
 
   models_binary_age_sex_PC <-
-    variants %>%
+    variants_recessive %>%
     map(
       \(SNP)
       data_binary %>%
@@ -140,7 +140,7 @@ fit_models <- function(data_path,
       drop_na())
 
   models_continuous_sd_unadj <-
-    variants %>%
+    variants_recessive %>%
     map(
       \(SNP)
       data_continuous_sd %>%
@@ -156,7 +156,7 @@ fit_models <- function(data_path,
     )
 
   models_continuous_sd_age_sex <-
-    variants %>%
+    variants_recessive %>%
     map(
       \(SNP)
       data_continuous_sd %>%
@@ -172,7 +172,7 @@ fit_models <- function(data_path,
     )
 
   models_continuous_sd_age_sex_PC <-
-    variants %>%
+    variants_recessive %>%
     map(
       \(SNP)
       data_continuous_sd %>%
@@ -210,7 +210,7 @@ fit_models <- function(data_path,
 
   # Unadjusted
   models_continuous_md_unadj <-
-    variants %>%
+    variants_recessive %>%
     map(
       \(SNP)
       data_continuous_md %>%
@@ -226,7 +226,7 @@ fit_models <- function(data_path,
     )
 
   models_continuous_md_age_sex <-
-    variants %>%
+    variants_recessive %>%
     map(
       \(SNP)
       data_continuous_md %>%
@@ -242,7 +242,7 @@ fit_models <- function(data_path,
     )
 
   models_continuous_md_age_sex_PC <-
-    variants %>%
+    variants_recessive %>%
     map(
       \(SNP)
       data_continuous_md %>%
@@ -314,7 +314,7 @@ fit_models <- function(data_path,
   summary_stats_plots <-
     summary_stats %>%
     filter(
-      term %in% variants,
+      term %in% variants_recessive,
       breastfed_as_a_baby != "Missing"
     ) %>%
     rename(
@@ -348,7 +348,7 @@ fit_models <- function(data_path,
   )
 }
 
-fit_models(
+fit_models_recessive(
   data_path = snakemake@input$data,
   output_path = snakemake@output$output
 )

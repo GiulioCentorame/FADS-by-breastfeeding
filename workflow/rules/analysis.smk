@@ -23,15 +23,28 @@ rule clean_phenotypes:
     script:
         "../scripts/clean_phenotypes.R"
 
-rule fit_models:
+rule fit_models_additive:
     input:
         data = f"{TEMP_DIR}/clean/data.RData"
     output:
-        output = f"{TEMP_DIR}/clean/model_summaries.RData"
+        output = f"{TEMP_DIR}/clean/model_summaries_additive.RData"
     threads: 96
     resources:
         mem_mb=500000
     envmodules:
         "r/4.2.1-foss-2021a"
     script:
-        "../scripts/fit_models.R"
+        "../scripts/fit_models_additive.R"
+
+rule fit_models_recessive:
+    input:
+        data = f"{TEMP_DIR}/clean/data.RData"
+    output:
+        output = f"{TEMP_DIR}/clean/model_summaries_recessive.RData"
+    threads: 96
+    resources:
+        mem_mb=500000
+    envmodules:
+        "r/4.2.1-foss-2021a"
+    script:
+        "../scripts/fit_models_recessive.R"
