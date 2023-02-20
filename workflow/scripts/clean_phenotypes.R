@@ -471,8 +471,9 @@ clean_phenotypes <- function(data_path,
       SBP,
       Age_SBP
     ) %>%
-    rename(
-      sbp = SBP,
+    transmute(
+      eid,
+      sbp = scale(SBP),
       age = Age_SBP
     )
 
@@ -490,8 +491,8 @@ clean_phenotypes <- function(data_path,
       DBP,
       Age_DBP
     ) %>%
-    rename(
-      dbp = DBP,
+    transmute(
+      dbp = scale(DBP),
       age = Age_DBP
     )
 
