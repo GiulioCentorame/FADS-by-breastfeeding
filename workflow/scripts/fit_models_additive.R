@@ -314,8 +314,7 @@ fit_models_additive <- function(data_path,
   summary_stats_plots <-
     summary_stats %>%
     filter(
-      term %in% variants,
-      breastfed_as_a_baby != "Missing"
+      term %in% variants
     ) %>%
     rename(
       variant = term,
