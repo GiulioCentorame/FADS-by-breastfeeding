@@ -18,12 +18,14 @@
 21003
 # Date of attending assessment centre
 ############## Intelligence and education #############
-## Intelligence
+## Fluid intelligence
 #FI full score
 20191
 20016
 # Date when completed FI test online
 20135
+# Completion status (online)
+20242
 ## Matrix pattern completion (imaging clinics)
 # correct
 6373
@@ -43,6 +45,8 @@
 20240
 # Date when numeric memory test completed online
 20138
+# Completion status
+4281
 ## Pairs matching
 # Assessment centre (earliest available instance for most)
 398
@@ -52,12 +56,16 @@
 20132
 # Date when pairs matching completed online
 20134
+# completion status (online)
+20244
 ## Paired associate learning
 20197
 ## Reaction time (AC only)
 20023
 ## Prospective memory
 20018
+# Completion status
+4287
 ## Symbol digit substitution
 # Assessment centre
 23324
@@ -67,6 +75,8 @@
 20195
 # Date at completion
 20137
+# Completed? (online)
+20245
 ## Trail making
 # Imaging clinics
 6348
@@ -76,6 +86,8 @@
 20157
 # Date at completion
 20136
+# completion status
+20246
 ## Educational attainment
 # Age completed full time Education
 845
