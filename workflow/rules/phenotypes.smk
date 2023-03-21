@@ -38,7 +38,7 @@ rule subset_participants_white_british:
         related_individuals = config.get("related_individuals"),
         nonwhitebritish = config.get("nonwhitebritish")
     output:
-        filtered_data = f"{TEMP_DIR}/phenotypes/subset_white_british.rds"
+        filtered_data = f"{TEMP_DIR}/phenotypes/white_british/subset.rds"
     envmodules:
         "r/4.2.1-foss-2021a"
     # conda:
@@ -57,7 +57,7 @@ rule subset_participants_any_ancestry:
         std_exclusions = config.get("std_exclusions"),
         related_individuals = config.get("related_individuals")
     output:
-        filtered_data = f"{TEMP_DIR}/phenotypes/subset_any_ancestry.rds"
+        filtered_data = f"{TEMP_DIR}/phenotypes/any_ancestry/subset.rds"
     envmodules:
         "r/4.2.1-foss-2021a"
     # conda:

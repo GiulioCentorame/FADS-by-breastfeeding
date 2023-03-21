@@ -1,11 +1,11 @@
 rule merge_phenotypes_and_variants:
     input:
-        phenotypes = f"{TEMP_DIR}/phenotypes/vars_subset.rds",
+        phenotypes = f"{TEMP_DIR}/phenotypes/{{ancestry_group}}/subset.rds",
         variants = f"{TEMP_DIR}/variants/variants.raw",
         SBP = f"{TEMP_DIR}/phenotypes/sbp.tsv",
         DBP = f"{TEMP_DIR}/phenotypes/dbp.tsv"
     output:
-        merged = f"{TEMP_DIR}/merged/data.rds"
+        merged = f"{TEMP_DIR}/merged/{{ancestry_group}}/data.rds"
     envmodules:
         "r/4.2.1-foss-2021a"
     conda:
@@ -15,9 +15,9 @@ rule merge_phenotypes_and_variants:
 
 rule clean_phenotypes:
     input:
-        data = f"{TEMP_DIR}/merged/data.rds"
+        data = f"{TEMP_DIR}/merged/{{ancestry_group}}/data.rds"
     output:
-        output = f"{TEMP_DIR}/clean/data.RData"
+        output = f"{TEMP_DIR}/clean/{{ancestry_group}}/data.RData"
     envmodules:
         "r/4.2.1-foss-2021a"
     script:
@@ -25,9 +25,9 @@ rule clean_phenotypes:
 
 rule fit_models_additive:
     input:
-        data = f"{TEMP_DIR}/clean/data.RData"
+        data = f"{TEMP_DIR}/clean/{{ancestry_group}}/data.RData"
     output:
-        output = f"{TEMP_DIR}/clean/model_summaries_additive.RData"
+        output = f"{TEMP_DIR}/clean/{{ancestry_group}}/model_summaries_additive.RData"
     threads: 96
     resources:
         mem_mb=500000
@@ -38,9 +38,9 @@ rule fit_models_additive:
 
 rule fit_models_recessive:
     input:
-        data = f"{TEMP_DIR}/clean/data.RData"
+        data = f"{TEMP_DIR}/clean/{{ancestry_group}}/data.RData"
     output:
-        output = f"{TEMP_DIR}/clean/model_summaries_recessive.RData"
+        output = f"{TEMP_DIR}/clean/{{ancestry_group}}/model_summaries_recessive.RData"
     threads: 96
     resources:
         mem_mb=500000
