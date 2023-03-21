@@ -33,8 +33,10 @@ if TEMP_DIR != "temp":
 
 rule all:
     input:
-        f"{TEMP_DIR}/clean/model_summaries_additive.RData",
-        f"{TEMP_DIR}/clean/model_summaries_recessive.RData"
+        expand(f"{TEMP_DIR}/clean/model_summaries_additive_{{ancestry_group}}.RData",
+               ancestry_group = wildcards.ancestry_group),
+        expand(f"{TEMP_DIR}/clean/model_summaries_recessive.RData",
+               ancestry_group = wildcards.ancestry_group)
 
 include: "rules/phenotypes.smk"
 

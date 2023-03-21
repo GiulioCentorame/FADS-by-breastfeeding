@@ -29,7 +29,7 @@ rule create_phenotypes_file:
     script:
         "../scripts/convert_basket.R"
 
-rule select_phenotypes_and_participants:
+rule subset_participants_white_british:
     input:
         data = f"{TEMP_DIR}/phenotypes/all_phenotypes.rds",
         field_ids = f"{TEMP_DIR}/phenotypes/field_ids.txt",
@@ -38,7 +38,7 @@ rule select_phenotypes_and_participants:
         related_individuals = config.get("related_individuals"),
         nonwhitebritish = config.get("nonwhitebritish")
     output:
-        filtered_data = f"{TEMP_DIR}/phenotypes/vars_subset.rds"
+        filtered_data = f"{TEMP_DIR}/phenotypes/subset_white_british.rds"
     envmodules:
         "r/4.2.1-foss-2021a"
     # conda:
@@ -47,7 +47,26 @@ rule select_phenotypes_and_participants:
     resources:
         mem_mb=500000
     script:
-        "../scripts/subset_phenotypes.R"
+        "../scripts/subset_phenotypes_white_british.R"
+
+rule subset_participants_any_ancestry:
+    input:
+        data = f"{TEMP_DIR}/phenotypes/all_phenotypes.rds",
+        field_ids = f"{TEMP_DIR}/phenotypes/field_ids.txt",
+        withdrawals = config.get("withdrawals"),
+        std_exclusions = config.get("std_exclusions"),
+        related_individuals = config.get("related_individuals")
+    output:
+        filtered_data = f"{TEMP_DIR}/phenotypes/subset_any_ancestry.rds"
+    envmodules:
+        "r/4.2.1-foss-2021a"
+    # conda:
+    #     "../envs/r.yaml"
+    threads: 96
+    resources:
+        mem_mb=500000
+    script:
+        "../scripts/subset_phenotypes_any_ancestry.R"
 
 rule clean_SBP:
     input:
