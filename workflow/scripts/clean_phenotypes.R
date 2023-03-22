@@ -861,7 +861,7 @@ clean_phenotypes <- function(data_path,
     drop_na() %>%
     mutate() %>%
     # No negative numbers, right?
-    filter(number_of_puzzles_correct_f2100 >= 0) %>%
+    filter(number_of_puzzles_correct_f21004 >= 0) %>%
     group_by(eid) %>%
     # Take first available instance
     filter(instance == min(instance, na.rm = TRUE)) %>%
