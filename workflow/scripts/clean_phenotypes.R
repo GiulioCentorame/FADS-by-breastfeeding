@@ -203,6 +203,8 @@ clean_phenotypes <- function(data_path,
     drop_na() %>%
     # Get only the earliest instance
     filter(instance == min(instance, na.rm = TRUE)) %>%
+    # Keep cases within 3 SDs
+    filter(abs(scale(fluid_intelligence_score_f20016)) < 3) %>%
     ungroup() %>%
     transmute(eid,
       fluid_intelligence_assessment_centre = scale(fluid_intelligence_score_f20016),
@@ -214,9 +216,24 @@ clean_phenotypes <- function(data_path,
     select(
       eid,
       fluid_intelligence_score_f20191_0_0,
-      age_when_fluid_intelligence_test_completed_online
+      age_when_fluid_intelligence_test_completed_online,
+      fluid_intelligence_completion_status_f20242_0_0
     ) %>%
-    mutate(fluid_intelligence_online = scale(fluid_intelligence_score_f20191_0_0))
+    # Keep cases within 3 SDs
+    filter(abs(scale(fluid_intelligence_score_f20191_0_0)) < 3) %>%
+    mutate(
+      fluid_intelligence_online = scale(fluid_intelligence_score_f20191_0_0),
+      # If incomplete, set as NA
+      fluid_intelligence_online = case_when(
+        fluid_intelligence_completion_status_f20242_0_0 == 0 ~ as.numeric(fluid_intelligence_online),
+        TRUE ~ NA_real_
+      )
+    ) %>%
+    select(
+      eid,
+      fluid_intelligence_online,
+      age_when_fluid_intelligence_test_completed_online
+    )
 
   fluid_intelligence <-
     full_join(fluid_intelligence_assessment_centre,
@@ -275,7 +292,8 @@ clean_phenotypes <- function(data_path,
       "Prefer not to answer" = NA
     )
 
-
+  # NOTE Years of schooling has a rectangular distribution, so outliers removal
+  # based on SDs would not make any sense!
   years_of_schooling <-
     data %>%
     select(
@@ -347,12 +365,15 @@ clean_phenotypes <- function(data_path,
     transmute(
       eid,
       number_of_offspring = case_when(
+        # Negative number = no data = NA
+        number_of_children_fathered_f2405 < 0 ~ NA_real_,
         # See Nicole's paper
         number_of_children_fathered_f2405 > 10 ~ 10,
         TRUE ~ as.numeric(number_of_children_fathered_f2405)
       ),
       age = age_when_attended_assessment_centre_f21003
-    )
+    ) %>%
+    drop_na()
 
   number_of_offspring_females <-
     data %>%
@@ -371,20 +392,28 @@ clean_phenotypes <- function(data_path,
     ungroup() %>%
     transmute(eid,
       number_of_offspring = case_when(
+        # Negative number = no data = NA
+        number_of_live_births_f2734 < 0 ~ NA_real_,
         # See https://www.nature.com/articles/s41467-021-25723-z
         number_of_live_births_f2734 > 10 ~ 10,
         TRUE ~ as.numeric(number_of_live_births_f2734)
       ),
       age = age_when_attended_assessment_centre_f21003
-    )
+    ) %>%
+    drop_na()
 
   number_of_offspring <-
     full_join(number_of_offspring_males, number_of_offspring_females) %>%
+    # JUST TO BE 100% SURE
+    filter(number_of_offspring >= 0) %>%
+    filter(abs(scale(number_of_offspring)) < 3) %>%
     transmute(
       eid,
       age,
       number_of_offspring = scale(number_of_offspring)
     ) %>%
+    # Retain cases within 4 SDs
+    # These are pre-scaled so I just need to filter by the abs value!
     drop_na()
 
   message(
@@ -406,6 +435,7 @@ clean_phenotypes <- function(data_path,
     filter(instance == min(instance, na.rm = TRUE)) %>%
     ungroup() %>%
     select(-instance) %>%
+    filter(abs(scale(ldl_direct_f30780)) < 3) %>%
     transmute(
       eid,
       ldl_direct = scale(ldl_direct_f30780),
@@ -431,6 +461,7 @@ clean_phenotypes <- function(data_path,
     filter(instance == min(instance, na.rm = TRUE)) %>%
     ungroup() %>%
     select(-instance) %>%
+    filter(abs(scale(hdl_direct)) < 3) %>%
     transmute(
       eid,
       hdl_direct = scale(hdl_cholesterol_f30760),
@@ -457,11 +488,13 @@ clean_phenotypes <- function(data_path,
     filter(instance == min(instance, na.rm = TRUE)) %>%
     ungroup() %>%
     select(-instance) %>%
+    filter(abs(scale(bmi)) < 3) %>%
     transmute(
       eid,
       bmi = scale(body_mass_index_bmi_f21001),
       age = age_when_attended_assessment_centre_f21003
-    )
+    ) %>%
+    drop_na()
 
   message(
     count_participants_long_data(bmi),
@@ -476,11 +509,13 @@ clean_phenotypes <- function(data_path,
       SBP,
       Age_SBP
     ) %>%
+    filter(abs(scale(SBP)) < 3) %>%
     transmute(
       eid,
       sbp = scale(SBP),
       age = Age_SBP
-    )
+    ) %>%
+    drop_na()
 
   message(
     count_participants_long_data(sbp),
@@ -496,11 +531,12 @@ clean_phenotypes <- function(data_path,
       DBP,
       Age_DBP
     ) %>%
-    transmute(
-      eid,
-      dbp = scale(DBP),
-      age = Age_DBP
-    )
+    filter(abs(scale(DBP)) < 3)
+  transmute(
+    eid,
+    dbp = scale(DBP),
+    age = Age_DBP
+  )
 
   message(
     count_participants_long_data(dbp),
@@ -769,10 +805,13 @@ clean_phenotypes <- function(data_path,
     longer_by_instance() %>%
     drop_na() %>%
     mutate(correct_answers_matrix_completion = number_of_puzzles_correctly_solved_f6373) %>%
+    # Must be positive!
+    filter(correct_answers_matrix_completion >= 0) %>%
     group_by(eid) %>%
     # Take first available instance
     filter(instance == min(instance, na.rm = TRUE)) %>%
     ungroup() %>%
+    filter(abs(scale(correct_answers_matrix_completion)) < 3) %>%
     transmute(eid,
       correct_answers_matrix_completion = scale(correct_answers_matrix_completion),
       age = age_when_attended_assessment_centre_f21003
@@ -792,10 +831,14 @@ clean_phenotypes <- function(data_path,
     ) %>%
     longer_by_instance() %>%
     drop_na() %>%
+    # ms can't be negative, right?
+    filter(mean_time_to_correctly_identify_matches_f20023 >= 0) %>%
     group_by(eid) %>%
     # Take first available instance
     filter(instance == min(instance, na.rm = TRUE)) %>%
     ungroup() %>%
+    # Trim outliers
+    filter(abs(scale(mean_time_to_correctly_identify_matches_f20023)) < 3) %>%
     transmute(eid,
       reaction_time_ms = scale(log(mean_time_to_correctly_identify_matches_f20023)),
       age = age_when_attended_assessment_centre_f21003
@@ -817,10 +860,13 @@ clean_phenotypes <- function(data_path,
     longer_by_instance() %>%
     drop_na() %>%
     mutate() %>%
+    # No negative numbers, right?
+    filter(number_of_puzzles_correct_f2100 >= 0) %>%
     group_by(eid) %>%
     # Take first available instance
     filter(instance == min(instance, na.rm = TRUE)) %>%
     ungroup() %>%
+    filter(abs(scale(number_of_puzzles_correct_f21004)) < 3) %>%
     transmute(eid,
       tower_rearranging_correct_answers = scale(number_of_puzzles_correct_f21004),
       age = age_when_attended_assessment_centre_f21003
@@ -866,7 +912,7 @@ clean_phenotypes <- function(data_path,
       numeric_memory_max_digits = case_when(
         !is.na(max_digits_numeric_memory_assessment_centre) ~ as.numeric(max_digits_numeric_memory_assessment_centre),
         TRUE ~ as.numeric(maximum_digits_remembered_correctly_f20240_0_0)
-      ) %>% scale(),
+      ),
       age = case_when(
         !is.na(max_digits_numeric_memory_assessment_centre) ~ as.numeric(age_when_attended_assessment_centre_f21003),
         TRUE ~ as.numeric(age_when_numeric_memory_test_completed_online)
@@ -876,6 +922,8 @@ clean_phenotypes <- function(data_path,
         TRUE ~ "Online"
       )
     ) %>%
+    filter(abs(scale(numeric_memory_max_digits)) < 3) %>%
+    mutate(numeric_memory_max_digits = scale(numeric_memory_max_digits)) %>%
     drop_na()
 
   message(count_participants_long_data(numeric_memory_max_digits), " participants with data on numeric memory") # 113,713
@@ -977,7 +1025,12 @@ clean_phenotypes <- function(data_path,
       )
     ) %>%
     drop_na() %>% # prevents -Inf
-    mutate(pairs_matching_incorrect_matches = scale(log(pairs_matching_incorrect_matches + 1))) %>%
+    # log(x+1) transform
+    mutate(pairs_matching_incorrect_matches = log(pairs_matching_incorrect_matches + 1)) %>%
+    # Remove outliers
+    filter(abs(scale(pairs_matching_incorrect_matches)) < 3) %>%
+    # transform in SD units
+    mutate(pairs_matching_incorrect_matches = scale(pairs_matching_incorrect_matches)) %>%
     drop_na()
 
   message(count_participants_long_data(pairs_matching_incorrect_matches), " participants with data on visual memory") # 335,650
@@ -997,6 +1050,8 @@ clean_phenotypes <- function(data_path,
     group_by(eid) %>%
     filter(instance == min(instance, na.rm = FALSE)) %>%
     ungroup() %>%
+    filter(number_of_word_pairs_correctly_associated_f20197 >= 0) %>%
+    filter(abs(scale(number_of_word_pairs_correctly_associated_f20197)) < 3) %>%
     transmute(
       eid,
       paired_associate_learning_correct_word_pairs = scale(number_of_word_pairs_correctly_associated_f20197),
@@ -1095,7 +1150,7 @@ clean_phenotypes <- function(data_path,
       symbol_digit_substitution_correct_answers = case_when(
         !is.na(symbol_digit_substitution_correct_answers_assessment_centre) ~ symbol_digit_substitution_correct_answers_assessment_centre,
         TRUE ~ symbol_digit_substitution_correct_answers_online
-      ) %>% scale(),
+      ),
       age = case_when(
         !is.na(symbol_digit_substitution_correct_answers_assessment_centre) ~ as.numeric(age_assessment_centre),
         TRUE ~ as.numeric(age_when_symbol_digit_substitution_completed_online)
@@ -1105,7 +1160,13 @@ clean_phenotypes <- function(data_path,
         TRUE ~ "Online"
       )
     ) %>%
-    drop_na()
+    # Must be positive
+    filter(symbol_digit_substitution_correct_answers >= 0) %>%
+    # Trim outliers
+    filter(abs(scale(symbol_digit_substitution_correct_answers)) < 3) %>%
+    # Rescale in SD units
+    mutate(symbol_digit_substitution_correct_answers = scale(symbol_digit_substitution_correct_answers))
+  drop_na()
 
   message(count_participants_long_data(symbol_digit_substitution_correct_answers), " participants with data on symbol digit substitution") # 106,881
 
@@ -1185,6 +1246,7 @@ clean_phenotypes <- function(data_path,
   trailmaking_path_1 <-
     trailmaking_path_1_unfiltered %>%
     filter(trailmaking_path_1 < 250) %>%
+    filter(abs(scale(log(trailmaking_path_1))) < 3) %>%
     drop_na()
 
   message(count_participants_long_data(trailmaking_path_1), " participants with data on trailmaking path 1 after removing cases over 250 s") # 83,589
@@ -1218,18 +1280,24 @@ clean_phenotypes <- function(data_path,
 
   trailmaking_path_2 <-
     trailmaking_path_2_unfiltered %>%
-    filter(trailmaking_path_2 < 250)
+    filter(trailmaking_path_2 < 250) %>%
+    filter(abs(scale(log(trailmaking_path_2))) < 3)
 
   message(count_participants_long_data(trailmaking_path_2), " participants with data on trailmaking path 2 after removing cases over 250 s") # 83,185
 
   trailmaking_2_minus_1 <-
     inner_join(trailmaking_path_1, trailmaking_path_2) %>%
+    # Make sure we have complete cases on both trails
     drop_na() %>%
     transmute(eid,
-      trailmaking_2_minus_1 = scale(trailmaking_path_2 - trailmaking_path_1),
+      trailmaking_2_minus_1 = log(trailmaking_path_2 - trailmaking_path_1),
       delivery,
       age = age
     ) %>%
+    # Trim outliers
+    filter(abs(scale(trailmaking_2_minus_1)) < 3) %>%
+    # Rescale in SD units
+    mutate(trailmaking_2_minus_1 = scale(trailmaking_2_minus_1)) %>%
     drop_na()
 
 
