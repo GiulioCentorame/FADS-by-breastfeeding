@@ -488,7 +488,7 @@ clean_phenotypes <- function(data_path,
     filter(instance == min(instance, na.rm = TRUE)) %>%
     ungroup() %>%
     select(-instance) %>%
-    filter(abs(scale(bmi)) < 3) %>%
+    filter(abs(scale(body_mass_index_bmi_f21001)) < 3) %>%
     transmute(
       eid,
       bmi = scale(body_mass_index_bmi_f21001),
