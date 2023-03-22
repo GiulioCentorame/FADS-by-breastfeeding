@@ -1290,7 +1290,7 @@ clean_phenotypes <- function(data_path,
     # Make sure we have complete cases on both trails
     drop_na() %>%
     transmute(eid,
-      trailmaking_2_minus_1 = log(trailmaking_path_2 - trailmaking_path_1),
+      trailmaking_2_minus_1 = trailmaking_path_2 - trailmaking_path_1,
       delivery,
       age = age
     ) %>%
