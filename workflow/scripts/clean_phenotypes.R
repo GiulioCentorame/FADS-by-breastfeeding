@@ -198,14 +198,14 @@ clean_phenotypes <- function(data_path,
     ) %>%
     # Convert data into long format (3 cols: eid, FI, age, instance)
     longer_by_instance() %>%
-    group_by(eid) %>%
     # Remove missing data points
     drop_na() %>%
+    group_by(eid) %>%
     # Get only the earliest instance
     filter(instance == min(instance, na.rm = TRUE)) %>%
+    ungroup() %>%
     # Keep cases within 3 SDs
     filter(abs(scale(fluid_intelligence_score_f20016)) < 3) %>%
-    ungroup() %>%
     transmute(eid,
       fluid_intelligence_assessment_centre = scale(fluid_intelligence_score_f20016),
       age_fluid_intelligence_assessment_centre = age_when_attended_assessment_centre_f21003
