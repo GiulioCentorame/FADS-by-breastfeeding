@@ -531,12 +531,12 @@ clean_phenotypes <- function(data_path,
       DBP,
       Age_DBP
     ) %>%
-    filter(abs(scale(DBP)) < 3)
-  transmute(
-    eid,
-    dbp = scale(DBP),
-    age = Age_DBP
-  )
+    filter(abs(scale(DBP)) < 3) %>%
+    transmute(
+      eid,
+      dbp = scale(DBP),
+      age = Age_DBP
+    )
 
   message(
     count_participants_long_data(dbp),
