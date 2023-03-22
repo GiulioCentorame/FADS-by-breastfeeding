@@ -1165,8 +1165,8 @@ clean_phenotypes <- function(data_path,
     # Trim outliers
     filter(abs(scale(symbol_digit_substitution_correct_answers)) < 3) %>%
     # Rescale in SD units
-    mutate(symbol_digit_substitution_correct_answers = scale(symbol_digit_substitution_correct_answers))
-  drop_na()
+    mutate(symbol_digit_substitution_correct_answers = scale(symbol_digit_substitution_correct_answers)) %>%
+    drop_na()
 
   message(count_participants_long_data(symbol_digit_substitution_correct_answers), " participants with data on symbol digit substitution") # 106,881
 
