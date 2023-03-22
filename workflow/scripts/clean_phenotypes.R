@@ -461,7 +461,7 @@ clean_phenotypes <- function(data_path,
     filter(instance == min(instance, na.rm = TRUE)) %>%
     ungroup() %>%
     select(-instance) %>%
-    filter(abs(scale(hdl_direct)) < 3) %>%
+    filter(abs(scale(hdl_cholesterol_f30760)) < 3) %>%
     transmute(
       eid,
       hdl_direct = scale(hdl_cholesterol_f30760),
