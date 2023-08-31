@@ -298,7 +298,7 @@ fit_models_recessive <- function(data_path,
       heart_attack = "Myocardial infarction",
       stroke = "Stroke",
       hayfever_rhinitis_eczema = "Hayfever, rhinitis, or eczema",
-      diabetes = "Diabetes"
+      type2_diabetes = "Type-II diabetes"
     )
 
   # Potential alternative to visualise it: https://github.com/rdboyes/forester
