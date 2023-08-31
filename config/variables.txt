@@ -111,10 +111,14 @@
 120007
 ############## Cardiometabolic traits #############
 ## Cholesterol
+# Total
+30690
 # LDL
 30780
 # HDL
 30760
+## Triglycerides
+30870
 ## BMI
 21001
 ## Blood pressure
