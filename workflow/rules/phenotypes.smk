@@ -67,31 +67,3 @@ rule subset_participants_any_ancestry:
         mem_mb=500000
     script:
         "../scripts/subset_phenotypes_any_ancestry.R"
-
-rule clean_SBP:
-    input:
-        f"{config.get('basket_path')}/ukb39610.csv"
-    output:
-        f"{TEMP_DIR}/phenotypes/sbp.tsv"
-    threads: 96
-    resources:
-        mem_mb=1000000,
-        disk_mb=4000,
-        time_min=400
-    script:
-        "../scripts/SBP.R"
-
-rule clean_DBP:
-    input:
-        f"{config.get('basket_path')}/ukb39610.csv"
-    output:
-        f"{TEMP_DIR}/phenotypes/dbp.tsv"
-    threads: 96
-    resources:
-        mem_mb=1000000,
-        disk_mb=4000,
-        time_min=400
-    envmodules:
-        "r/4.2.1-foss-2021a"
-    script:
-        "../scripts/DBP.R"
