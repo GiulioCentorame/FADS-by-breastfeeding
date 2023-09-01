@@ -422,6 +422,33 @@ clean_phenotypes <- function(data_path,
   ) # 335,648
 
   # Cholesterol
+
+  total_cholesterol <-
+    data %>%
+    select(
+      eid,
+      contains("f30690"),
+      contains("age_when_attended_assessment_centre")
+    ) %>%
+    longer_by_instance() %>%
+    drop_na() %>%
+    group_by(eid) %>%
+    filter(instance == min(instance, na.rm = TRUE)) %>%
+    ungroup() %>%
+    select(-instance) %>%
+    filter(abs(scale(cholesterol_f30690)) < 3) %>%
+    transmute(
+      eid,
+      total_cholesterol = scale(cholesterol_f30690),
+      age = age_when_attended_assessment_centre_f21003,
+    ) %>%
+    drop_na()
+
+  message(
+    count_participants_long_data(total_cholesterol),
+    " participants with data on total cholesterol"
+  ) # 294,443
+
   ldl_direct <-
     data %>%
     select(
@@ -472,6 +499,32 @@ clean_phenotypes <- function(data_path,
   message(
     count_participants_long_data(hdl_direct),
     " participants with data on hdl cholesterol"
+  ) # 294,443
+
+  triglycerides <-
+    data %>%
+    select(
+      eid,
+      contains("f30870"),
+      contains("age_when_attended_assessment_centre")
+    ) %>%
+    longer_by_instance() %>%
+    drop_na() %>%
+    group_by(eid) %>%
+    filter(instance == min(instance, na.rm = TRUE)) %>%
+    ungroup() %>%
+    select(-instance) %>%
+    filter(abs(scale(triglycerides_f30870)) < 3) %>%
+    transmute(
+      eid,
+      triglycerides = scale(triglycerides_f30870),
+      age = age_when_attended_assessment_centre_f21003
+    ) %>%
+    drop_na()
+
+  message(
+    count_participants_long_data(triglycerides),
+    " participants with data on triglycerides"
   ) # 294,443
 
   # BMI
@@ -1319,6 +1372,8 @@ clean_phenotypes <- function(data_path,
   test_duplicates(fluid_intelligence)
   test_duplicates(years_of_schooling)
   test_duplicates(number_of_offspring)
+  test_duplicates(total_cholesterol)
+  test_duplicates(triglycerides)
   test_duplicates(ldl_direct)
   test_duplicates(ldl_direct)
   test_duplicates(bmi)
@@ -1362,8 +1417,10 @@ clean_phenotypes <- function(data_path,
     list(
       years_of_schooling = years_of_schooling,
       number_of_offspring = number_of_offspring,
+      total_cholesterol = total_cholesterol,
       ldl_direct = ldl_direct,
       hdl_direct = hdl_direct,
+      triglycerides = triglycerides,
       bmi = bmi,
       sbp = sbp,
       dbp = dbp,
