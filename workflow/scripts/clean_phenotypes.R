@@ -936,10 +936,20 @@ clean_phenotypes <- function(data_path,
     select(
       eid,
       contains("f4282"),
-      contains("f21003")
+      contains("f21003"),
+      contains("f4281")
     ) %>%
     longer_by_instance() %>%
     drop_na() %>%
+    # field 4281 has 3 options:
+    # - stopped (2): the test was interrupted by the system due to
+    #   too many errors (99+% participants)
+    # - complete (3): the participant maxed out on the questions
+    # - abandoned (9): the participant quit the test before completion
+    #
+    # In this case, we want to retain stopped and complete only
+    filter(completion_status_of_numeric_memory_test_f4281 %in% c(2, 3)) %>%
+    select(-completion_status_of_numeric_memory_test_f4281) %>%
     group_by(eid) %>%
     filter(instance == min(instance, na.rm = TRUE)) %>%
     ungroup() %>%
@@ -1129,11 +1139,15 @@ clean_phenotypes <- function(data_path,
     select(
       eid,
       contains("f20018"),
-      contains("f21003")
+      contains("f21003"),
+      contains("f4287")
     ) %>%
     longer_by_instance() %>%
     drop_na() %>%
     group_by(eid) %>%
+    # 3 == completed
+    # 9 == abandoned
+    filter(test_completion_status_f4287 == 3) %>%
     filter(instance == min(instance, na.rm = TRUE)) %>%
     ungroup() %>%
     transmute(
@@ -1190,8 +1204,11 @@ clean_phenotypes <- function(data_path,
     select(
       eid,
       contains("f20159"),
+      contains("f20245"),
       age_when_symbol_digit_substitution_completed_online
     ) %>%
+    filter(symbol_digit_completion_status_f20245_0_0 == 0) %>%
+    select(-symbol_digit_completion_status_f20245_0_0) %>%
     rename(symbol_digit_substitution_correct_answers_online = number_of_symbol_digit_matches_made_correctly_f20159_0_0)
 
   symbol_digit_substitution_correct_answers <-
@@ -1265,8 +1282,11 @@ clean_phenotypes <- function(data_path,
       eid,
       contains("f20156"),
       contains("f20157"),
+      contains("f20246"),
       age_when_trail_making_test_completed_online
     ) %>%
+    filter(trail_making_completion_status_f20246_0_0 == 0) %>%
+    select(-trail_making_completion_status_f20246_0_0) %>%
     drop_na()
 
   trailmaking_path_1_unfiltered <-
