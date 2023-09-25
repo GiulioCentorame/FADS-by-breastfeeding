@@ -43,7 +43,8 @@ count_participants_long_data <- function(data) {
 # MAIN
 
 clean_phenotypes <- function(data_path,
-                             output_path) {
+                             output_path,
+                             image_path) {
   # 335,650 observations!
   data <- readRDS(data_path)
 
@@ -1474,9 +1475,13 @@ clean_phenotypes <- function(data_path,
     list_binary_first_instance_breastfeeding,
     file = output_path
   )
+
+  # Save snapshot image for descriptives
+  base::save.image(image_path)
 }
 
 clean_phenotypes(
   data_path = snakemake@input$data,
-  output_path = snakemake@output$output
+  output_path = snakemake@output$output,
+  image_path = snakemake@output$image
 )

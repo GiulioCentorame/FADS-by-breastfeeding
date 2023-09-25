@@ -39,6 +39,8 @@ rule all:
                ancestry_group = ancestry_group),
         expand(f"{TEMP_DIR}/clean/{{ancestry_group}}/model_summaries_recessive.RData",
                ancestry_group = ancestry_group)
+        expand(f"{TEMP_DIR}/clean/{{ancestry_group}/all_data.RData",
+               ancestry_group = ancestry_group)
 
 include: "rules/phenotypes.smk"
 
