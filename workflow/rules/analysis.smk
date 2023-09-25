@@ -47,7 +47,8 @@ rule clean_phenotypes:
     input:
         data = f"{TEMP_DIR}/merged/{{ancestry_group}}/data.rds"
     output:
-        output = f"{TEMP_DIR}/clean/{{ancestry_group}}/data.RData"
+        output = f"{TEMP_DIR}/clean/{{ancestry_group}}/data_for_models.RData",
+        image = f"{TEMP_DIR}/clean/{{ancestry_group}/all_data.RData"
     envmodules:
         "r/4.2.1-foss-2021a"
     script:
