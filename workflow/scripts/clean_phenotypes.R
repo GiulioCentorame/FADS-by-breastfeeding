@@ -188,6 +188,7 @@ clean_phenotypes <- function(data_path,
     data %>%
     select(
       eid,
+      year_of_birth_f34_0_0,
       townsend_deprivation_index_at_recruitment_f189_0_0,
       genotype_measurement_batch_f22000_0_0,
       heterozygosity_pca_corrected_f22004_0_0,
