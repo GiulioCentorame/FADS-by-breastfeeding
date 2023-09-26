@@ -184,6 +184,16 @@ clean_phenotypes <- function(data_path,
     longer_by_instance() %>%
     drop_na()
 
+  descriptive_data <-
+    data %>%
+    select(
+      eid,
+      townsend_deprivation_index_at_recruitment_f189_0_0,
+      genotype_measurement_batch_f22000_0_0,
+      heterozygosity_pca_corrected_f22004_0_0,
+      genotype_measurement_well_f22008_0_0
+    ) %>%
+    full_join(common_data, by = "eid")
 
   # Outcomes
   # HACK: most of this can be rewritten with dplyr::coalesce()
@@ -1465,13 +1475,12 @@ clean_phenotypes <- function(data_path,
     )
 
 
-  # Save snapshot image for descriptives
-
   ## Write data
   base::save(
     variants,
     variants_recessive,
     common_data,
+    descriptive_data,
     list_continuous_multiple_delivery_first_instance_breastfeeding,
     list_continuous_single_delivery_first_instance_breastfeeding,
     list_binary_first_instance_breastfeeding,
@@ -1483,5 +1492,3 @@ clean_phenotypes(
   data_path = snakemake@input$data,
   output_path = snakemake@output$output
 )
-
-base::save.image(snakemake@output$image)
