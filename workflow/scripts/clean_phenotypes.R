@@ -43,8 +43,7 @@ count_participants_long_data <- function(data) {
 # MAIN
 
 clean_phenotypes <- function(data_path,
-                             output_path,
-                             image_path) {
+                             output_path) {
   # 335,650 observations!
   data <- readRDS(data_path)
 
@@ -1467,7 +1466,6 @@ clean_phenotypes <- function(data_path,
 
 
   # Save snapshot image for descriptives
-  base::save.image(image_path)
 
   ## Write data
   base::save(
@@ -1483,6 +1481,7 @@ clean_phenotypes <- function(data_path,
 
 clean_phenotypes(
   data_path = snakemake@input$data,
-  output_path = snakemake@output$output,
-  image_path = snakemake@output$image
+  output_path = snakemake@output$output
 )
+
+base::save.image(snakemake@output$image)
