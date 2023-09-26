@@ -1465,6 +1465,10 @@ clean_phenotypes <- function(data_path,
       prospective_memory_binary = prospective_memory_binary
     )
 
+
+  # Save snapshot image for descriptives
+  base::save.image(image_path)
+
   ## Write data
   base::save(
     variants,
@@ -1475,9 +1479,6 @@ clean_phenotypes <- function(data_path,
     list_binary_first_instance_breastfeeding,
     file = output_path
   )
-
-  # Save snapshot image for descriptives
-  base::save.image(image_path)
 }
 
 clean_phenotypes(
