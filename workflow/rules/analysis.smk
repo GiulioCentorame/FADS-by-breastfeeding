@@ -56,7 +56,7 @@ rule clean_phenotypes:
 
 rule fit_models_additive:
     input:
-        data = f"{TEMP_DIR}/clean/{{ancestry_group}}/data.RData"
+        data = f"{TEMP_DIR}/clean/{{ancestry_group}}/data_for_models.RData"
     output:
         output = f"{TEMP_DIR}/clean/{{ancestry_group}}/model_summaries_additive.RData"
     threads: 96
@@ -69,7 +69,7 @@ rule fit_models_additive:
 
 rule fit_models_recessive:
     input:
-        data = f"{TEMP_DIR}/clean/{{ancestry_group}}/data.RData"
+        data = f"{TEMP_DIR}/clean/{{ancestry_group}}/data_for_models.RData"
     output:
         output = f"{TEMP_DIR}/clean/{{ancestry_group}}/model_summaries_recessive.RData"
     threads: 96
