@@ -647,12 +647,20 @@ clean_phenotypes <- function(data_path,
     vascular_problems %>%
     group_by(eid) %>%
     summarise(
-      angina = any(vascularheart_problems_diagnosed_by_doctor_f6150 == "Angina", na.rm = TRUE),
+      angina = case_when(
+        # If at least one of the reported values was the condition, it's affected
+        any(vascularheart_problems_diagnosed_by_doctor_f6150 == "Angina", na.rm = TRUE) ~ TRUE,
+        # If they're all NA, it's missing
+        all(is.na(vascularheart_problems_diagnosed_by_doctor_f6150)) ~ NA,
+        # Unaffected for remaining values (no reported condition and not all missing)
+        TRUE ~ FALSE
+      ),
       # For age, min age when reporting angina
       age = case_when(
         angina == TRUE ~ min(age_when_attended_assessment_centre_f21003, na.rm = TRUE),
         # or max age without reporting it
-        angina == FALSE ~ max(age_when_attended_assessment_centre_f21003, na.rm = TRUE)
+        angina == FALSE ~ max(age_when_attended_assessment_centre_f21003, na.rm = TRUE),
+        TRUE ~ NA
       )
     ) %>%
     drop_na()
@@ -670,12 +678,20 @@ clean_phenotypes <- function(data_path,
     vascular_problems %>%
     group_by(eid) %>%
     summarise(
-      heart_attack = any(vascularheart_problems_diagnosed_by_doctor_f6150 == "Heart attack", na.rm = TRUE),
+      heart_attack = case_when(
+        # If at least one of the reported values was the condition, it's affected
+        any(vascularheart_problems_diagnosed_by_doctor_f6150 == "Heart attack", na.rm = TRUE) ~ TRUE,
+        # If they're all NA, it's missing
+        all(is.na(vascularheart_problems_diagnosed_by_doctor_f6150)) ~ NA,
+        # Unaffected for remaining values (no reported condition and not all missing)
+        TRUE ~ FALSE
+      ),
       # For age, min age when reporting angina
       age = case_when(
         heart_attack == TRUE ~ min(age_when_attended_assessment_centre_f21003, na.rm = TRUE),
         # or max age without reporting it
-        heart_attack == FALSE ~ max(age_when_attended_assessment_centre_f21003, na.rm = TRUE)
+        heart_attack == FALSE ~ max(age_when_attended_assessment_centre_f21003, na.rm = TRUE),
+        TRUE ~ NA
       )
     ) %>%
     drop_na()
@@ -693,12 +709,20 @@ clean_phenotypes <- function(data_path,
     vascular_problems %>%
     group_by(eid) %>%
     summarise(
-      stroke = any(vascularheart_problems_diagnosed_by_doctor_f6150 == "Stroke", na.rm = TRUE),
+      stroke = case_when(
+        # If at least one of the reported values was the condition, it's affected
+        any(vascularheart_problems_diagnosed_by_doctor_f6150 == "Stroke", na.rm = TRUE) ~ TRUE,
+        # If they're all NA, it's missing
+        all(is.na(vascularheart_problems_diagnosed_by_doctor_f6150)) ~ NA,
+        # Unaffected for remaining values (no reported condition and not all missing)
+        TRUE ~ FALSE
+      ),
       # For age, min age when reporting angina
       age = case_when(
         stroke == TRUE ~ min(age_when_attended_assessment_centre_f21003, na.rm = TRUE),
         # or max age without reporting it
-        stroke == FALSE ~ max(age_when_attended_assessment_centre_f21003, na.rm = TRUE)
+        stroke == FALSE ~ max(age_when_attended_assessment_centre_f21003, na.rm = TRUE),
+        TRUE ~ NA
       )
     ) %>%
     drop_na()
@@ -742,7 +766,14 @@ clean_phenotypes <- function(data_path,
     mutate(blood_clot_dvt_bronchitis_emphysema_asthma_rhinitis_eczema_allergy_diagnosed_by_doctor_f6152 = na_if(blood_clot_dvt_bronchitis_emphysema_asthma_rhinitis_eczema_allergy_diagnosed_by_doctor_f6152, "Prefer not to answer")) %>%
     group_by(eid) %>%
     summarise(
-      hayfever_rhinitis_eczema = any(blood_clot_dvt_bronchitis_emphysema_asthma_rhinitis_eczema_allergy_diagnosed_by_doctor_f6152 == "Hayfever, allergic rhinitis or eczema", na.rm = TRUE),
+      hayfever_rhinitis_eczema = case_when(
+        # If at least one of the reported values was the condition, it's affected
+        any(blood_clot_dvt_bronchitis_emphysema_asthma_rhinitis_eczema_allergy_diagnosed_by_doctor_f6152 == "Hayfever, allergic rhinitis or eczema", na.rm = TRUE) ~ TRUE,
+        # If they're all NA, it's missing
+        all(is.na(blood_clot_dvt_bronchitis_emphysema_asthma_rhinitis_eczema_allergy_diagnosed_by_doctor_f6152)) ~ NA,
+        # Unaffected for remaining values (no reported condition and not all missing)
+        TRUE ~ FALSE
+      ),
       age = year_of_birth_f34_0_0
     ) %>%
     ungroup() %>%
