@@ -659,8 +659,7 @@ clean_phenotypes <- function(data_path,
       age = case_when(
         angina == TRUE ~ min(age_when_attended_assessment_centre_f21003, na.rm = TRUE),
         # or max age without reporting it
-        angina == FALSE ~ max(age_when_attended_assessment_centre_f21003, na.rm = TRUE),
-        TRUE ~ NA
+        angina == FALSE ~ max(age_when_attended_assessment_centre_f21003, na.rm = TRUE)
       )
     ) %>%
     drop_na()
@@ -690,8 +689,7 @@ clean_phenotypes <- function(data_path,
       age = case_when(
         heart_attack == TRUE ~ min(age_when_attended_assessment_centre_f21003, na.rm = TRUE),
         # or max age without reporting it
-        heart_attack == FALSE ~ max(age_when_attended_assessment_centre_f21003, na.rm = TRUE),
-        TRUE ~ NA
+        heart_attack == FALSE ~ max(age_when_attended_assessment_centre_f21003, na.rm = TRUE)
       )
     ) %>%
     drop_na()
@@ -721,8 +719,7 @@ clean_phenotypes <- function(data_path,
       age = case_when(
         stroke == TRUE ~ min(age_when_attended_assessment_centre_f21003, na.rm = TRUE),
         # or max age without reporting it
-        stroke == FALSE ~ max(age_when_attended_assessment_centre_f21003, na.rm = TRUE),
-        TRUE ~ NA
+        stroke == FALSE ~ max(age_when_attended_assessment_centre_f21003, na.rm = TRUE)
       )
     ) %>%
     drop_na()
