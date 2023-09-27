@@ -921,7 +921,9 @@ clean_phenotypes <- function(data_path,
     filter(instance == min(instance, na.rm = TRUE)) %>%
     ungroup() %>%
     filter(abs(scale(correct_answers_matrix_completion)) < 3) %>%
-    transmute(eid,
+    transmute(
+      eid,
+      correct_answers_matrix_completion_raw = correct_answers_matrix_completion,
       correct_answers_matrix_completion = scale(correct_answers_matrix_completion),
       age = age_when_attended_assessment_centre_f21003
     ) %>%
@@ -949,6 +951,7 @@ clean_phenotypes <- function(data_path,
     # Trim outliers
     filter(abs(scale(mean_time_to_correctly_identify_matches_f20023)) < 3) %>%
     transmute(eid,
+      reaction_time_ms_raw = mean_time_to_correctly_identify_matches_f20023,
       reaction_time_ms = scale(log(mean_time_to_correctly_identify_matches_f20023)),
       age = age_when_attended_assessment_centre_f21003
     ) %>%
