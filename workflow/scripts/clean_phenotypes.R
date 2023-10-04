@@ -1506,7 +1506,8 @@ clean_phenotypes <- function(data_path,
     symbol_digit_substitution_correct_answers = symbol_digit_substitution_correct_answers,
     trailmaking_path_1 = trailmaking_path_1,
     trailmaking_path_2 = trailmaking_path_2,
-    trailmaking_2_minus_1 = trailmaking_2_minus_1
+    trailmaking_2_minus_1 = trailmaking_2_minus_1,
+    pairs_matching_incorrect_matches = pairs_matching_incorrect_matches
   )
 
   ## List 2
@@ -1526,8 +1527,7 @@ clean_phenotypes <- function(data_path,
       correct_answers_matrix_completion = correct_answers_matrix_completion,
       reaction_time_ms = reaction_time_ms,
       tower_rearranging_correct_answers = tower_rearranging_correct_answers,
-      paired_associate_learning_correct_word_pairs = paired_associate_learning_correct_word_pairs,
-      pairs_matching_incorrect_matches = pairs_matching_incorrect_matches
+      paired_associate_learning_correct_word_pairs = paired_associate_learning_correct_word_pairs
     )
 
   ## List 3
