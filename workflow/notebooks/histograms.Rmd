@@ -1,0 +1,105 @@
+---
+title: "Phenotype distribution"
+format: html
+editor: visual
+---
+
+```{r setup, echo = FALSE, message=FALSE, warning=FALSE, include=FALSE}
+library(dplyr)
+
+# Load data
+base::load(snakemake@input[[1]])
+
+# Unlist for ease of life
+list2env(list_continuous_multiple_delivery_first_instance_breastfeeding, globalenv())
+list2env(list_continuous_single_delivery_first_instance_breastfeeding, globalenv())
+
+# Free up some memory
+rm(list_continuous_multiple_delivery_first_instance_breastfeeding,
+   list_continuous_single_delivery_first_instance_breastfeeding)
+
+histogram <- function(data){
+  axis_label <- 
+    # good old trick
+    # NOTE can't be in a pipe or you'll get "."
+    deparse(substitute(data)) %>%
+    gsub("_", " ", .) %>%
+    stringr::str_to_title()
+    
+  hist(data[[deparse(substitute(data))]],
+       xlab = axis_label,
+       main = paste("Histogram of", axis_label))
+}
+```
+
+```{r bmi}
+histogram(bmi)
+```
+
+```{r matrix-completion}
+histogram(correct_answers_matrix_completion)
+```
+
+```{r dbp}
+histogram(dbp)
+```
+
+```{r sbp}
+histogram(sbp)
+```
+
+```{r fluid-intelligence}
+histogram(fluid_intelligence)
+```
+
+```{r ldl-direct}
+histogram(ldl_direct)
+```
+
+```{r hdl-direct}
+histogram(hdl_direct)
+```
+
+```{r numeric-memory}
+histogram(numeric_memory_max_digits)
+```
+
+```{r number-of-offspring}
+histogram(number_of_offspring)
+```
+
+```{r paired-associate-learning}
+histogram(paired_associate_learning_correct_word_pairs)
+```
+
+```{r pairs-matching}
+histogram(pairs_matching_incorrect_matches)
+```
+
+```{r reaction-time}
+histogram(reaction_time_ms)
+```
+
+```{r symbol-digit-substitution}
+histogram(symbol_digit_substitution_correct_answers)
+```
+
+```{r tower-rearranging}
+histogram(tower_rearranging_correct_answers)
+```
+
+```{r trailmaking-path-1}
+histogram(trailmaking_path_1)
+```
+
+```{r trailmaking-path-2}
+histogram(trailmaking_path_2)
+```
+
+```{r trailmaking-2minus1}
+histogram(trailmaking_2_minus_1)
+```
+
+```{r years-of-schooling}
+histogram(years_of_schooling)
+```

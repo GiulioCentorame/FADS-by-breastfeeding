@@ -1,0 +1,998 @@
+---
+title: "Descriptive analysis"
+author: "Giulio Centorame"
+date: "`r Sys.Date()`"
+format: html
+editor: visual
+theme:
+  light: flatly
+  dark: darkly
+---
+
+```{r setup, include = FALSE}
+
+library(table1)
+library(dplyr)
+library(purrr)
+library(tidyr)
+library(gtsummary)
+
+# Declare functions
+reduce_outcomes <- 
+  function(data){
+    map(data, \(x) select(x, -age)) %>%
+      reduce(full_join)
+    }
+
+rename_list <- function(.data, ...) {
+    mapping <- sapply(
+        rlang::enquos(...),
+        rlang::as_name
+    )
+    new_names = setNames(nm=names(.data))
+    # `new_name = old_name` for consistency with `dplyr::rename`
+    new_names[mapping] = names(mapping)
+    # for `old_name = new_name` use: `new_names[names(mapping)] = mapping`
+    setNames(.data, new_names)
+}
+
+# Load data in
+base::load(snakemake@input[[1]])
+#base::load("../../temp/clean/white_british/data_for_models.RData")
+
+# General descriptive statistics by 
+descriptive_data <-
+  # Round dosage to allelic count
+  descriptive_data %>%
+  mutate(rs1535_A = factor(round(rs1535_A)),
+         rs174575_C = factor(round(rs174575_C)),
+         rs174583_C = factor(round(rs174583_C))
+         ) %>%
+  # Assign alleles for each allelic count
+  mutate(
+    rs1535_A = case_when(rs1535_A == 0 ~ "GG",
+                         rs1535_A == 1 ~ "GA",
+                         rs1535_A == 2 ~ "AA"),
+    rs174575_C = case_when(rs174575_C == 0 ~ "GG",
+                           rs174575_C == 1 ~ "GC",
+                           rs174575_C == 2 ~ "CC"),
+    rs174583_C = case_when(rs174583_C == 0 ~ "TT",
+                           rs174583_C == 1 ~ "TC",
+                           rs174583_C == 2 ~ "CC"),
+    breastfed_as_a_baby = recode_factor(
+      breastfed_as_a_baby,
+      Yes = "Breastfed",
+      No = "Bottlefed",
+      Missing = "Missing"
+      )
+    ) %>%
+  rename(yob = year_of_birth_f34_0_0,
+         tdi = townsend_deprivation_index_at_recruitment_f189_0_0)
+
+list_binary_first_instance_breastfeeding <- 
+  list_binary_first_instance_breastfeeding %>%
+  imap(\(x, trait) 
+       x %>%
+       mutate(
+         # I have given up understanding indirection for today, but this works
+         # (see https://stackoverflow.com/questions/73710930/mutate-variable-using-indirection)
+              !!sym(trait) := case_match(
+              !!sym(trait),
+                TRUE ~ "Affected",
+                FALSE ~ "Unaffected",
+                NA ~ "Missing"
+                )
+              )
+       )
+
+# Get rid of eczema and handle it manually in tables 
+eczema <- 
+  list_binary_first_instance_breastfeeding$hayfever_rhinitis_eczema %>%
+  rename(date_of_birth = age) %>%
+  relocate(hayfever_rhinitis_eczema, date_of_birth)
+
+list_binary_first_instance_breastfeeding <- 
+  within(list_binary_first_instance_breastfeeding, rm(hayfever_rhinitis_eczema, prospective_memory_binary))
+
+# Create one big tibble for all binary outcomes
+outcomes_binary <-
+  reduce_outcomes(list_binary_first_instance_breastfeeding) %>%
+  full_join(descriptive_data, by = "eid")
+
+# Same with continuous outcomes with single delivery
+outcomes_continuous_single_delivery <- 
+  reduce_outcomes(list_continuous_single_delivery_first_instance_breastfeeding) %>%
+  full_join(descriptive_data, by = "eid")
+
+```
+
+# Stratified by breastfeeding
+
+## Covariates
+
+```{r covariates-by-breastfeeding-table1, include = FALSE, eval=FALSE}
+# Create named list of table labels
+table1_labels <- 
+  list(
+    variables = list(
+      sex="Sex",
+      yob = "Year of birth",
+      tdi = "Townsend deprivation index"
+      ),
+    groups = list("", "Breastfed as a baby")
+  )
+
+table1_strata <- 
+  c(
+    # First column: Total
+    list(Total=descriptive_data),
+    # Aggregated columns: SNPs stratified by breastfeeding status
+    split(descriptive_data, descriptive_data$breastfed_as_a_baby)
+    )
+  
+table1(table1_strata, table1_labels, groupspan = c(1, 3), data = descriptive_data)
+```
+
+```{r covariates-by-breastfeeding, echo = FALSE, warning = FALSE, message= FALSE}
+
+descriptive_data %>%
+  select(yob, sex, tdi, breastfed_as_a_baby) %>%
+  tbl_summary(by = breastfed_as_a_baby, 
+              percent = "cell",
+              label = list(
+                yob ~ "Year of birth",
+                sex ~ "Sex",
+                tdi ~ "Townsend deprivation index"
+              ),
+              type = list(all_continuous() ~ 'continuous2'),
+              statistic = all_continuous() ~ c("{mean} ({sd})",
+                                               "{median} [{min}, {max}]")
+              ) %>%
+  add_overall(last = TRUE, col_label = "**Total**, N = {n}") %>%
+  modify_header(label = " ")
+```
+
+## Continuous traits
+
+```{r continuous-outcomes-by-breastfeeding-table1, eval = FALSE, include = FALSE}
+# Create named list of table labels
+table3_labels <- 
+  list(
+    variables = list(
+      years_of_schooling_raw = "Years of schooling",
+      number_of_offspring_raw = "Number of offspring",
+      total_cholesterol_raw = "Total cholesterol",
+      ldl_direct_raw = "LDL cholesterol (mmol/l)",
+      hdl_direct_raw = "HDL cholesterol (mmol/l)",
+      triglycerides_raw = "Triglycerides (mmol/l)",
+      bmi_raw = "Body mass index (kg/m²)",
+      sbp_raw = "Systolic blood pressure (mmHg, controlling for medication use)",
+      dbp_raw = "Diastolic blood pressure (mmHg, controlling for medication use)",
+      correct_answers_matrix_completion_raw = "Matrix pattern completion (correct answers)",
+      reaction_time_ms_raw = "Reaction time (ms)",
+      tower_rearranging_correct_answers_raw = "Tower rearranging (correct answers)",
+      paired_associate_learning_correct_word_pairs_raw = "Paired associate learning (correct word pairs)",
+      pairs_matching_incorrect_matches_raw = "Pairs matching (incorrect matches)"
+      ),
+    groups = list("", "Breastfed as a baby")
+  )
+
+table3_strata <- 
+  c(
+    # First column: Total
+    list(Total=outcomes_continuous_single_delivery),
+    # Aggregated columns: SNPs stratified by breastfeeding status
+    split(outcomes_continuous_single_delivery, outcomes_continuous_single_delivery$breastfed_as_a_baby)
+    )
+
+table1(table3_strata, table3_labels, groupspan = c(1, 3), data = outcomes_continuous_single_delivery)
+```
+
+```{r continuous-by-breastfeeding, echo = FALSE, warning = FALSE, message= FALSE}
+outcomes_continuous_single_delivery %>%
+  select(ends_with("_raw"), breastfed_as_a_baby) %>%
+  tbl_summary(by = breastfed_as_a_baby, 
+              percent = "cell",
+              label = list(
+                 years_of_schooling_raw = "Years of schooling",
+                 number_of_offspring_raw = "Number of offspring",
+                 total_cholesterol_raw = "Total cholesterol",
+                 ldl_direct_raw = "LDL cholesterol (mmol/l)",
+                 hdl_direct_raw = "HDL cholesterol (mmol/l)",
+                 triglycerides_raw = "Triglycerides (mmol/l)",
+                 bmi_raw = "Body mass index (kg/m²)",
+                 sbp_raw = "Systolic blood pressure (mmHg, controlling for medication use)",
+                 dbp_raw = "Diastolic blood pressure (mmHg, controlling for medication use)",
+                 correct_answers_matrix_completion_raw = "Matrix pattern completion (correct answers)",
+                 reaction_time_ms_raw = "Reaction time (ms)",
+                 tower_rearranging_correct_answers_raw = "Tower rearranging (correct answers)",
+                 paired_associate_learning_correct_word_pairs_raw = "Paired associate learning (correct word pairs)"
+              ),
+              type = list(all_continuous() ~ 'continuous2',
+                          years_of_schooling_raw ~ 'continuous2',
+                          number_of_offspring_raw ~ 'continuous2'),
+              statistic = all_continuous() ~ c("{N_nonmiss}",
+                                               "{mean} ({sd})",
+                                               "{median} [{min}, {max}]"),
+              missing = "no") %>%
+  add_overall(last = TRUE, col_label = "**Total**") %>%
+  modify_header(label = " ")
+```
+
+## Cognitive tests with multiple delivery
+
+```{r cognitive-tests-md-by-breastfeeding, echo = FALSE, warning = FALSE, message= FALSE}
+
+list_continuous_multiple_delivery_first_instance_breastfeeding %>%
+  map(\(x) 
+      descriptive_data %>%
+        mutate(
+          breastfed_as_a_baby = recode_factor(
+            breastfed_as_a_baby,
+            Yes = "Breastfed",
+            No = "Bottlefed",
+            Missing = "Missing"
+            )
+        ) %>%
+        # Join descriptive data for every element of the list
+        full_join(x, ., by = "eid")) %>%
+  imap(\(x, trait) select(x, breastfed_as_a_baby, .data[[paste0(trait, "_raw")]], age, delivery)) %>%
+  imap(\(x, trait) rename(x, 
+                  "Score" = .data[[paste0(trait, "_raw")]],
+                  "Age at assessment" = age)) %>%
+  imap(
+    \(x, trait){
+      tbl_strata(
+          x,
+          strata = breastfed_as_a_baby,
+          .tbl_fun = ~.x %>%
+            tbl_summary(by = delivery, 
+                        percent = "cell",
+                        type = everything() ~ "continuous2",
+                        statistic = list(
+                          Score ~ c("{N_nonmiss}",
+                          "{mean} ({sd})",
+                          "{median} [{min}, {max}]"),
+                          `Age at assessment` ~ c("{mean} ({sd})",
+                                  "{median} [{min}, {max}]")
+                          )
+                       ) %>%
+            modify_header(
+              label = " ",
+              stat_1 = "**Assessment centre**",
+              stat_2 = "**Online**"
+            ),
+          .header = "**{strata}**"
+          )
+      }
+    ) %>%
+  rename_list(
+  "Fluid intelligence" = fluid_intelligence,
+  "Numeric memory (max digits)" = numeric_memory_max_digits,
+  "Symbol digit substitution (correct answers)" = symbol_digit_substitution_correct_answers,
+  "Trailmaking path 1 (ds)" = trailmaking_path_1,
+  "Trailmaking path 2 (ds)" = trailmaking_path_2,
+  "Trailmaking path 2-1 (ds)" = trailmaking_2_minus_1,
+  "Pairs matching (incorrect matches)" = pairs_matching_incorrect_matches
+) %>%
+  tbl_stack(group_header = names(.)) %>%
+  bold_levels()
+```
+
+## Binary traits
+
+```{r table4-diseases-by-breastfeeding, include = FALSE, eval = FALSE}
+# Create named list of table labels
+table4_labels <- 
+  list(
+    variables = list(
+      angina="Angina",
+      heart_attack = "Heart attack",
+      stroke="Stroke",
+      hayfever_rhinitis_eczema = "Hayfever, rhinitis, or eczema",
+      type2_diabetes = "Type-II Diabetes"
+      ),
+    groups = list("", "Breastfed as a baby")
+  )
+
+table4_strata <- 
+  c(
+    # First column: Total
+    list(Total=outcomes_binary),
+    # Aggregated columns: SNPs stratified by breastfeeding status
+    split(outcomes_binary, outcomes_binary$breastfed_as_a_baby)
+    )
+
+table1(table4_strata, table4_labels, groupspan = c(1, 3), data = outcomes_binary)
+```
+
+```{r binary-by-breastfeeding, echo = FALSE, warning = FALSE, message= FALSE}
+
+binary_by_breastfeeding <- 
+list_binary_first_instance_breastfeeding %>%
+  map(
+    \(x) 
+      descriptive_data %>%
+        # Join descriptive data for every element of the list
+        inner_join(x, ., by = "eid")
+      ) %>%
+  imap(
+    \(x, trait) select(x, breastfed_as_a_baby, .data[[paste0(trait)]], age) %>%
+      rename(
+        "Status" = .data[[trait]]
+        )
+    ) %>%
+  imap(
+    \(x, trait){
+       tbl_summary(
+         x,
+         by = breastfed_as_a_baby, 
+         percent = "cell",
+         label = list(age = "Age at assessment"),
+         type = list(age ~ 'continuous2'),
+         statistic = all_continuous() ~ c("{mean} ({sd})",
+                                          "{median} [{min}, {max}]")
+         ) %>%
+        add_overall(last = TRUE, col_label = "**Total**") %>%
+        modify_header(label = " ")
+      }
+    ) %>%
+  rename_list(
+    "Angina" = angina,
+    "Heart attack" = heart_attack,
+    "Stroke" = stroke,
+    "Type-II Diabetes" = type2_diabetes
+  )
+  
+  # Handle eczema manually
+  eczema_by_breastfeeding <- 
+    eczema %>%
+    inner_join(descriptive_data, by = "eid") %>%
+    select(breastfed_as_a_baby, date_of_birth, hayfever_rhinitis_eczema) %>%
+    rename("Status" = hayfever_rhinitis_eczema) %>%
+    tbl_summary(
+         by = breastfed_as_a_baby, 
+         percent = "column",
+         label = list(date_of_birth = "Date of birth"),
+         type = list(date_of_birth ~ 'continuous2'),
+         statistic = all_continuous() ~ c("{median} [{min}, {max}]")
+         ) %>%
+    add_overall(last = TRUE, col_label = "**Total**, N = {n}")
+  
+  binary_by_breastfeeding[["Hayfever, rhinitis, or eczema"]] <- eczema_by_breastfeeding
+  
+
+  tbl_stack(binary_by_breastfeeding,
+            group_header = names(binary_by_breastfeeding))
+```
+
+Percentages are relative to each column
+
+# Stratified by genotype
+
+## rs1535
+
+### Covariates
+
+```{r covariates-by-rs1535, echo = FALSE, warning = FALSE, message= FALSE}
+
+descriptive_data %>%
+  select(yob, sex, tdi, rs1535_A) %>%
+  tbl_summary(by = rs1535_A, 
+              percent = "cell",
+              label = list(
+                yob ~ "Year of birth",
+                sex ~ "Sex",
+                tdi ~ "Townsend deprivation index"
+              ),
+              type = list(all_continuous() ~ 'continuous2'),
+              statistic = all_continuous() ~ c("{mean} ({sd})",
+                                               "{median} [{min}, {max}]")
+              ) %>%
+  add_overall(last = TRUE, col_label = "**Total**, N = {n}") %>%
+  modify_header(label = " ")
+```
+
+### Continuous traits
+
+```{r continuous-by-rs1535, echo = FALSE, warning = FALSE, message= FALSE}
+outcomes_continuous_single_delivery %>%
+  select(ends_with("_raw"), rs1535_A) %>%
+  tbl_summary(by = rs1535_A, 
+              percent = "cell",
+              label = list(
+                 years_of_schooling_raw = "Years of schooling",
+                 number_of_offspring_raw = "Number of offspring",
+                 total_cholesterol_raw = "Total cholesterol",
+                 ldl_direct_raw = "LDL cholesterol (mmol/l)",
+                 hdl_direct_raw = "HDL cholesterol (mmol/l)",
+                 triglycerides_raw = "Triglycerides (mmol/l)",
+                 bmi_raw = "Body mass index (kg/m²)",
+                 sbp_raw = "Systolic blood pressure (mmHg, controlling for medication use)",
+                 dbp_raw = "Diastolic blood pressure (mmHg, controlling for medication use)",
+                 correct_answers_matrix_completion_raw = "Matrix pattern completion (correct answers)",
+                 reaction_time_ms_raw = "Reaction time (ms)",
+                 tower_rearranging_correct_answers_raw = "Tower rearranging (correct answers)",
+                 paired_associate_learning_correct_word_pairs_raw = "Paired associate learning (correct word pairs)"
+              ),
+              type = list(all_continuous() ~ 'continuous2',
+                          years_of_schooling_raw ~ 'continuous2',
+                          number_of_offspring_raw ~ 'continuous2'),
+              statistic = all_continuous() ~ c("{N_nonmiss}",
+                                               "{mean} ({sd})",
+                                               "{median} [{min}, {max}]"),
+              missing = "no") %>%
+  add_overall(last = TRUE, col_label = "**Total**") %>%
+  modify_header(label = " ")
+```
+
+### Cognitive tests with multiple delivery
+
+```{r cognitive-tests-md-by-rs1535, echo = FALSE, warning = FALSE, message= FALSE}
+
+list_continuous_multiple_delivery_first_instance_breastfeeding %>%
+  map(\(x) 
+      descriptive_data %>%
+        # Join descriptive data for every element of the list
+        full_join(x, ., by = "eid")) %>%
+  imap(\(x, trait) select(x, rs1535_A, .data[[paste0(trait, "_raw")]], age, delivery)) %>%
+  imap(\(x, trait) rename(x, 
+                  "Score" = .data[[paste0(trait, "_raw")]],
+                  "Age at assessment" = age)) %>%
+  imap(
+    \(x, trait){
+      tbl_strata(
+          x,
+          strata = rs1535_A,
+          .tbl_fun = ~.x %>%
+            tbl_summary(by = delivery, 
+                        percent = "cell",
+                        type = everything() ~ "continuous2",
+                        statistic = list(
+                          Score ~ c("{N_nonmiss}",
+                          "{mean} ({sd})",
+                          "{median} [{min}, {max}]"),
+                          `Age at assessment` ~ c("{mean} ({sd})",
+                                  "{median} [{min}, {max}]")
+                          )
+                       ) %>%
+            modify_header(
+              label = " ",
+              stat_1 = "**Assessment centre**",
+              stat_2 = "**Online**"
+            ),
+          .header = "**{strata}**"
+          )
+      }
+    ) %>%
+  rename_list(
+  "Fluid intelligence" = fluid_intelligence,
+  "Numeric memory (max digits)" = numeric_memory_max_digits,
+  "Symbol digit substitution (correct answers)" = symbol_digit_substitution_correct_answers,
+  "Trailmaking path 1 (ds)" = trailmaking_path_1,
+  "Trailmaking path 2 (ds)" = trailmaking_path_2,
+  "Trailmaking path 2-1 (ds)" = trailmaking_2_minus_1,
+  "Pairs matching (incorrect matches)" = pairs_matching_incorrect_matches
+) %>%
+  tbl_stack(group_header = names(.)) %>%
+  bold_levels()
+```
+
+### Binary traits
+
+```{r binary-by-rs1535, echo = FALSE, warning = FALSE, message= FALSE}
+
+binary_by_rs1535 <- 
+list_binary_first_instance_breastfeeding %>%
+  map(
+    \(x) 
+      descriptive_data %>%
+        # Join descriptive data for every element of the list
+        inner_join(x, ., by = "eid")
+      ) %>%
+  imap(
+    \(x, trait) select(x, rs1535_A, .data[[paste0(trait)]], age) %>%
+      rename(
+        "Status" = .data[[trait]]
+        )
+    ) %>%
+  imap(
+    \(x, trait){
+       tbl_summary(
+         x,
+         by = rs1535_A, 
+         percent = "cell",
+         label = list(age = "Age at assessment"),
+         type = list(age ~ 'continuous2'),
+         statistic = all_continuous() ~ c("{mean} ({sd})",
+                                          "{median} [{min}, {max}]")
+         ) %>%
+        add_overall(last = TRUE, col_label = "**Total**") %>%
+        modify_header(label = " ")
+      }
+    ) %>%
+  rename_list(
+    "Angina" = angina,
+    "Heart attack" = heart_attack,
+    "Stroke" = stroke,
+    "Type-II Diabetes" = type2_diabetes
+  )
+  
+  # Handle eczema manually
+  eczema_by_rs1535 <- 
+    eczema %>%
+    inner_join(descriptive_data, by = "eid") %>%
+    select(rs1535_A, date_of_birth, hayfever_rhinitis_eczema) %>%
+    rename("Status" = hayfever_rhinitis_eczema) %>%
+    tbl_summary(
+         by = rs1535_A, 
+         percent = "column",
+         label = list(date_of_birth = "Date of birth"),
+         type = list(date_of_birth ~ 'continuous2'),
+         statistic = all_continuous() ~ c("{median} [{min}, {max}]")
+         ) %>%
+    add_overall(last = TRUE, col_label = "**Total**, N = {n}")
+  
+  binary_by_rs1535[["Hayfever, rhinitis, or eczema"]] <- eczema_by_rs1535
+  
+
+  tbl_stack(binary_by_rs1535,
+            group_header = names(binary_by_rs1535))
+```
+
+## rs174575
+
+### Covariates
+
+```{r covariates-by-rs174575, echo = FALSE, warning = FALSE, message= FALSE}
+
+descriptive_data %>%
+  select(yob, sex, tdi, rs174575_C) %>%
+  tbl_summary(by = rs174575_C, 
+              percent = "cell",
+              label = list(
+                yob ~ "Year of birth",
+                sex ~ "Sex",
+                tdi ~ "Townsend deprivation index"
+              ),
+              type = list(all_continuous() ~ 'continuous2'),
+              statistic = all_continuous() ~ c("{mean} ({sd})",
+                                               "{median} [{min}, {max}]")
+              ) %>%
+  add_overall(last = TRUE, col_label = "**Total**, N = {n}") %>%
+  modify_header(label = " ")
+```
+
+### Continuous traits
+
+```{r continuous-by-rs174575, echo = FALSE, warning = FALSE, message= FALSE}
+outcomes_continuous_single_delivery %>%
+  select(ends_with("_raw"), rs174575_C) %>%
+  tbl_summary(by = rs174575_C, 
+              percent = "cell",
+              label = list(
+                 years_of_schooling_raw = "Years of schooling",
+                 number_of_offspring_raw = "Number of offspring",
+                 total_cholesterol_raw = "Total cholesterol",
+                 ldl_direct_raw = "LDL cholesterol (mmol/l)",
+                 hdl_direct_raw = "HDL cholesterol (mmol/l)",
+                 triglycerides_raw = "Triglycerides (mmol/l)",
+                 bmi_raw = "Body mass index (kg/m²)",
+                 sbp_raw = "Systolic blood pressure (mmHg, controlling for medication use)",
+                 dbp_raw = "Diastolic blood pressure (mmHg, controlling for medication use)",
+                 correct_answers_matrix_completion_raw = "Matrix pattern completion (correct answers)",
+                 reaction_time_ms_raw = "Reaction time (ms)",
+                 tower_rearranging_correct_answers_raw = "Tower rearranging (correct answers)",
+                 paired_associate_learning_correct_word_pairs_raw = "Paired associate learning (correct word pairs)"
+              ),
+              type = list(all_continuous() ~ 'continuous2',
+                          years_of_schooling_raw ~ 'continuous2',
+                          number_of_offspring_raw ~ 'continuous2'),
+              statistic = all_continuous() ~ c("{N_nonmiss}",
+                                               "{mean} ({sd})",
+                                               "{median} [{min}, {max}]"),
+              missing = "no") %>%
+  add_overall(last = TRUE, col_label = "**Total**") %>%
+  modify_header(label = " ")
+```
+
+### Cognitive tests with multiple delivery
+
+```{r cognitive-tests-md-by-rs174575, echo = FALSE, warning = FALSE, message= FALSE}
+
+list_continuous_multiple_delivery_first_instance_breastfeeding %>%
+  map(\(x) 
+      descriptive_data %>%
+        # Join descriptive data for every element of the list
+        full_join(x, ., by = "eid")) %>%
+  imap(\(x, trait) select(x, rs174575_C, .data[[paste0(trait, "_raw")]], age, delivery)) %>%
+  imap(\(x, trait) rename(x, 
+                  "Score" = .data[[paste0(trait, "_raw")]],
+                  "Age at assessment" = age)) %>%
+  imap(
+    \(x, trait){
+      tbl_strata(
+          x,
+          strata = rs174575_C,
+          .tbl_fun = ~.x %>%
+            tbl_summary(by = delivery, 
+                        percent = "cell",
+                        type = everything() ~ "continuous2",
+                        statistic = list(
+                          Score ~ c("{N_nonmiss}",
+                          "{mean} ({sd})",
+                          "{median} [{min}, {max}]"),
+                          `Age at assessment` ~ c("{mean} ({sd})",
+                                  "{median} [{min}, {max}]")
+                          )
+                       ) %>%
+            modify_header(
+              label = " ",
+              stat_1 = "**Assessment centre**",
+              stat_2 = "**Online**"
+            ),
+          .header = "**{strata}**"
+          )
+      }
+    ) %>%
+  rename_list(
+  "Fluid intelligence" = fluid_intelligence,
+  "Numeric memory (max digits)" = numeric_memory_max_digits,
+  "Symbol digit substitution (correct answers)" = symbol_digit_substitution_correct_answers,
+  "Trailmaking path 1 (ds)" = trailmaking_path_1,
+  "Trailmaking path 2 (ds)" = trailmaking_path_2,
+  "Trailmaking path 2-1 (ds)" = trailmaking_2_minus_1,
+  "Pairs matching (incorrect matches)" = pairs_matching_incorrect_matches
+) %>%
+  tbl_stack(group_header = names(.)) %>%
+  bold_levels()
+```
+
+### Binary traits
+
+```{r binary-by-rs174575, echo = FALSE, warning = FALSE, message= FALSE}
+
+binary_by_rs174575 <- 
+list_binary_first_instance_breastfeeding %>%
+  map(
+    \(x) 
+      descriptive_data %>%
+        # Join descriptive data for every element of the list
+        inner_join(x, ., by = "eid")
+      ) %>%
+  imap(
+    \(x, trait) select(x, rs174575_C, .data[[paste0(trait)]], age) %>%
+      rename(
+        "Status" = .data[[trait]]
+        )
+    ) %>%
+  imap(
+    \(x, trait){
+       tbl_summary(
+         x,
+         by = rs174575_C, 
+         percent = "cell",
+         label = list(age = "Age at assessment"),
+         type = list(age ~ 'continuous2'),
+         statistic = all_continuous() ~ c("{mean} ({sd})",
+                                          "{median} [{min}, {max}]")
+         ) %>%
+        add_overall(last = TRUE, col_label = "**Total**") %>%
+        modify_header(label = " ")
+      }
+    ) %>%
+  rename_list(
+    "Angina" = angina,
+    "Heart attack" = heart_attack,
+    "Stroke" = stroke,
+    "Type-II Diabetes" = type2_diabetes
+  )
+  
+  # Handle eczema manually
+  eczema_by_rs174575 <- 
+    eczema %>%
+    inner_join(descriptive_data, by = "eid") %>%
+    select(rs174575_C, date_of_birth, hayfever_rhinitis_eczema) %>%
+    rename("Status" = hayfever_rhinitis_eczema) %>%
+    tbl_summary(
+         by = rs174575_C, 
+         percent = "column",
+         label = list(date_of_birth = "Date of birth"),
+         type = list(date_of_birth ~ 'continuous2'),
+         statistic = all_continuous() ~ c("{median} [{min}, {max}]")
+         ) %>%
+    add_overall(last = TRUE, col_label = "**Total**, N = {n}")
+  
+  binary_by_rs174575[["Hayfever, rhinitis, or eczema"]] <- eczema_by_rs174575
+  
+
+  tbl_stack(binary_by_rs174575,
+            group_header = names(binary_by_rs174575))
+```
+
+## rs174583
+
+### Covariates
+
+```{r covariates-by-rs174583, echo = FALSE, warning = FALSE, message= FALSE}
+
+descriptive_data %>%
+  select(yob, sex, tdi, rs174583_C) %>%
+  tbl_summary(by = rs174583_C, 
+              percent = "cell",
+              label = list(
+                yob ~ "Year of birth",
+                sex ~ "Sex",
+                tdi ~ "Townsend deprivation index"
+              ),
+              type = list(all_continuous() ~ 'continuous2'),
+              statistic = all_continuous() ~ c("{mean} ({sd})",
+                                               "{median} [{min}, {max}]")
+              ) %>%
+  add_overall(last = TRUE, col_label = "**Total**, N = {n}") %>%
+  modify_header(label = " ")
+```
+
+### Continuous traits
+
+```{r continuous-by-rs174583, echo = FALSE, warning = FALSE, message= FALSE}
+outcomes_continuous_single_delivery %>%
+  select(ends_with("_raw"), rs174583_C) %>%
+  tbl_summary(by = rs174583_C, 
+              percent = "cell",
+              label = list(
+                 years_of_schooling_raw = "Years of schooling",
+                 number_of_offspring_raw = "Number of offspring",
+                 total_cholesterol_raw = "Total cholesterol",
+                 ldl_direct_raw = "LDL cholesterol (mmol/l)",
+                 hdl_direct_raw = "HDL cholesterol (mmol/l)",
+                 triglycerides_raw = "Triglycerides (mmol/l)",
+                 bmi_raw = "Body mass index (kg/m²)",
+                 sbp_raw = "Systolic blood pressure (mmHg, controlling for medication use)",
+                 dbp_raw = "Diastolic blood pressure (mmHg, controlling for medication use)",
+                 correct_answers_matrix_completion_raw = "Matrix pattern completion (correct answers)",
+                 reaction_time_ms_raw = "Reaction time (ms)",
+                 tower_rearranging_correct_answers_raw = "Tower rearranging (correct answers)",
+                 paired_associate_learning_correct_word_pairs_raw = "Paired associate learning (correct word pairs)"
+              ),
+              type = list(all_continuous() ~ 'continuous2',
+                          years_of_schooling_raw ~ 'continuous2',
+                          number_of_offspring_raw ~ 'continuous2'),
+              statistic = all_continuous() ~ c("{N_nonmiss}",
+                                               "{mean} ({sd})",
+                                               "{median} [{min}, {max}]"),
+              missing = "no") %>%
+  add_overall(last = TRUE, col_label = "**Total**") %>%
+  modify_header(label = " ")
+```
+
+### Cognitive tests with multiple delivery
+
+```{r cognitive-tests-md-by-rs174583, echo = FALSE, warning = FALSE, message= FALSE}
+
+list_continuous_multiple_delivery_first_instance_breastfeeding %>%
+  map(\(x) 
+      descriptive_data %>%
+        # Join descriptive data for every element of the list
+        full_join(x, ., by = "eid")) %>%
+  imap(\(x, trait) select(x, rs174583_C, .data[[paste0(trait, "_raw")]], age, delivery)) %>%
+  imap(\(x, trait) rename(x, 
+                  "Score" = .data[[paste0(trait, "_raw")]],
+                  "Age at assessment" = age)) %>%
+  imap(
+    \(x, trait){
+      tbl_strata(
+          x,
+          strata = rs174583_C,
+          .tbl_fun = ~.x %>%
+            tbl_summary(by = delivery, 
+                        percent = "cell",
+                        type = everything() ~ "continuous2",
+                        statistic = list(
+                          Score ~ c("{N_nonmiss}",
+                          "{mean} ({sd})",
+                          "{median} [{min}, {max}]"),
+                          `Age at assessment` ~ c("{mean} ({sd})",
+                                  "{median} [{min}, {max}]")
+                          )
+                       ) %>%
+            modify_header(
+              label = " ",
+              stat_1 = "**Assessment centre**",
+              stat_2 = "**Online**"
+            ),
+          .header = "**{strata}**"
+          )
+      }
+    ) %>%
+  rename_list(
+  "Fluid intelligence" = fluid_intelligence,
+  "Numeric memory (max digits)" = numeric_memory_max_digits,
+  "Symbol digit substitution (correct answers)" = symbol_digit_substitution_correct_answers,
+  "Trailmaking path 1 (ds)" = trailmaking_path_1,
+  "Trailmaking path 2 (ds)" = trailmaking_path_2,
+  "Trailmaking path 2-1 (ds)" = trailmaking_2_minus_1,
+  "Pairs matching (incorrect matches)" = pairs_matching_incorrect_matches
+) %>%
+  tbl_stack(group_header = names(.)) %>%
+  bold_levels()
+```
+
+### Binary traits
+
+```{r binary-by-rs174583, echo = FALSE, warning = FALSE, message= FALSE}
+
+binary_by_rs174583 <- 
+list_binary_first_instance_breastfeeding %>%
+  map(
+    \(x) 
+      descriptive_data %>%
+        # Join descriptive data for every element of the list
+        inner_join(x, ., by = "eid")
+      ) %>%
+  imap(
+    \(x, trait) select(x, rs174583_C, .data[[paste0(trait)]], age) %>%
+      rename(
+        "Status" = .data[[trait]]
+        )
+    ) %>%
+  imap(
+    \(x, trait){
+       tbl_summary(
+         x,
+         by = rs174583_C, 
+         percent = "cell",
+         label = list(age = "Age at assessment"),
+         type = list(age ~ 'continuous2'),
+         statistic = all_continuous() ~ c("{mean} ({sd})",
+                                          "{median} [{min}, {max}]")
+         ) %>%
+        add_overall(last = TRUE, col_label = "**Total**") %>%
+        modify_header(label = " ")
+      }
+    ) %>%
+  rename_list(
+    "Angina" = angina,
+    "Heart attack" = heart_attack,
+    "Stroke" = stroke,
+    "Type-II Diabetes" = type2_diabetes
+  )
+  
+  # Handle eczema manually
+  eczema_by_rs174583 <- 
+    eczema %>%
+    inner_join(descriptive_data, by = "eid") %>%
+    select(rs174583_C, date_of_birth, hayfever_rhinitis_eczema) %>%
+    rename("Status" = hayfever_rhinitis_eczema) %>%
+    tbl_summary(
+         by = rs174583_C, 
+         percent = "column",
+         label = list(date_of_birth = "Date of birth"),
+         type = list(date_of_birth ~ 'continuous2'),
+         statistic = all_continuous() ~ c("{median} [{min}, {max}]")
+         ) %>%
+    add_overall(last = TRUE, col_label = "**Total**, N = {n}")
+  
+  binary_by_rs174583[["Hayfever, rhinitis, or eczema"]] <- eczema_by_rs174583
+  
+
+  tbl_stack(binary_by_rs174583,
+            group_header = names(binary_by_rs174583))
+```
+
+# Crosstabs
+
+## rs1535-by-breastfeeding
+
+```{r crosstable-breastfeeding-by-rs1535, echo = FALSE}
+
+tbl_cross(
+  descriptive_data,
+  row = rs1535_A,
+  col = breastfed_as_a_baby,
+  statistic = "{n} ({p}%)",
+  label = list(
+    rs1535_A ~ "rs1535 genotype",
+    breastfed_as_a_baby ~ "Breastfed as a baby"
+  )
+)
+```
+
+## rs174575-by-breastfeeding
+
+```{r crosstable-breastfeeding-by-rs174575, echo = FALSE}
+
+tbl_cross(
+  descriptive_data,
+  row = rs174575_C,
+  col = breastfed_as_a_baby,
+  statistic = "{n} ({p}%)",
+  label = list(
+    rs174575_C ~ "rs174575 genotype",
+    breastfed_as_a_baby ~ "Breastfed as a baby"
+  )
+)
+```
+
+## rs174583-by-breastfeeding
+
+```{r crosstable-breastfeeding-by-rs174583, echo = FALSE}
+
+tbl_cross(
+  descriptive_data,
+  row = rs174583_C,
+  col = breastfed_as_a_baby,
+  statistic = "{n} ({p}%)",
+  label = list(
+    rs174583_C ~ "rs174583 genotype",
+    breastfed_as_a_baby ~ "Breastfed as a baby"
+  )
+)
+```
+
+```{r table2-covariates-by-genotypes, include = FALSE, eval = FALSE}
+# Create named list of table labels
+table2_labels <- 
+  list(
+    variables = list(
+      sex="Sex",
+      yob = "Year of birth",
+      breastfed_as_a_baby="Breastfed as a baby",
+      tdi = "Townsend deprivation index"
+      ),
+    groups = list("", "rs1535", "rs174575", "rs174583")
+  )
+
+table2_strata <- 
+  c(
+    # First column: Total
+    list(Total=descriptive_data),
+    # Aggregated columns: SNPs stratified by genotype
+    split(descriptive_data, descriptive_data$rs1535_A),
+    split(descriptive_data, descriptive_data$rs174575_C),
+    split(descriptive_data, descriptive_data$rs174583_C)
+    )
+
+table1(table2_strata, table2_labels, groupspan = c(1, 3, 3, 3), data = descriptive_data)
+```
+
+```{r table5-cognitive-outcomes-multiple-delivery, eval = FALSE, include = FALSE}
+
+
+#md_by_rs1535 <-
+  list_continuous_multiple_delivery_first_instance_breastfeeding %>%
+  # Join descriptive data for every element of the list
+  map(\(x) inner_join(x, descriptive_data, by = "eid")) %>%
+  imap(\(x, trait) select(x, rs1535_A, .data[[paste0(trait, "_raw")]], age, delivery)) %>%
+  imap(\(x, trait) rename(x, 
+                  "Score" = .data[[paste0(trait, "_raw")]],
+                  "Age at assessment" = age)) %>%
+  imap(
+    \(x, trait){
+      tbl_strata(
+          x,
+          strata = rs1535_A,
+          .tbl_fun = ~.x %>%
+            tbl_summary(by = delivery, 
+                        percent = "cell",
+                        type = everything() ~ "continuous2",
+                        statistic = all_continuous() ~ c("{mean} ({sd})",
+                                                       "{median} [{min}, {max}]")),
+          .header = "**{strata}**, N = {n}"
+          ) %>%
+          modify_spanning_header("var_type_1" ~ "Breastfed as a baby")
+      }
+    ) %>%
+  rename_list(
+  "Fluid intelligence" = fluid_intelligence,
+  "Numeric memory (max digits)" = numeric_memory_max_digits,
+  "Symbol digit substitution (correct answers)" = symbol_digit_substitution_correct_answers,
+  "Trailmaking (path 1)" = trailmaking_path_1,
+  "Trailmaking (path 2)" = trailmaking_path_2,
+  "Trailmaking (path 2-1)" = trailmaking_2_minus_1
+) %>%
+  tbl_stack(group_header = names(.)) %>%
+  bold_levels()
+
+
+```

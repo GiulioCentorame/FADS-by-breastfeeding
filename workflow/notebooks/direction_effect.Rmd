@@ -1,0 +1,131 @@
+---
+title: "Direction of effect for traits with a statistically-significant main effect"
+author: "Giulio Centorame"
+date: "`r Sys.Date()`"
+output:
+  rmdformats::downcute:
+    toc: 6
+    number_sections: yes
+---
+
+The aim of this notebook is to make sense of the direction of effect of traits with a statistically-significant main SNP effect for rs1535, rs174575, and rs174583
+
+## Setup
+
+```{r setup}
+library(ieugwasr)
+library(purrr)
+library(dplyr)
+
+snps <- c("rs1535", "rs174575", "rs174583")
+
+```
+
+## Our results
+
+These are the direction of effect observed in our results:
+
+```{r observed-direction}
+observed_direction <-
+  tibble::tribble(
+  ~trait, ~observed_direction,
+  "triglycerides", "Decreasing",
+  "HDL cholesterol", "Increasing",
+  "LDL cholesterol", "Increasing",
+  "Total cholesterol", "Increasing",
+  "Intelligence", "Decreasing"
+)
+
+observed_direction
+```
+
+First, we extract the DHA alleles and direction of effect for all three SNPs
+
+```{r dha}
+# DHA
+# GWAS from UK Biobank metabolomics
+dha <- associations(variants = snps, "met-d-DHA", proxies = 0)
+
+dha
+```
+
+We extract the DHA-increaser allele, by flipping them if the coefficient is negative
+
+```{r align-dha}
+# Align to increaser allele
+
+dha_increaser <-
+  dha %>%
+  transmute(
+    rsid,
+    dha_increaser_allele = if_else(beta >= 0, ea, nea)
+  )
+
+dha_increaser
+```
+
+Then, we extract the summary stats for all the remaining traits
+
+```{r triglycerides}
+# UKB MR-Base sumstats: https://gwas.mrcieu.ac.uk/files/ieu-b-111/ieu-b-111_report.html
+triglycerides <- associations(variants = snps, id = "ieu-b-111", proxies = 0)
+
+triglycerides
+```
+
+```{r hdl}
+# Richardson et al. (2020): https://pubmed.ncbi.nlm.nih.gov/32203549/
+hdl <- associations(variants = snps, id = "ieu-b-109", proxies = 0)
+
+hdl
+```
+
+```{r ldl}
+# Richardson et al. (2020): https://pubmed.ncbi.nlm.nih.gov/32203549/
+ldl <- associations(variants = snps, id = "ieu-b-110", proxies = 0)
+
+ldl
+```
+
+```{r total-cholesterol}
+# Willer et al. 2013: https://pubmed.ncbi.nlm.nih.gov/24097068/
+total_cholesterol <- associations(variants = snps, id = "ieu-a-301", proxies = 0)
+
+total_cholesterol
+```
+
+```{r intelligence}
+# Savage et al 2018: 
+intelligence <- associations(variants = snps, id = "ebi-a-GCST006250", proxies = 0)
+
+intelligence
+```
+
+```{r summary-table}
+summary_table <-
+list(triglycerides, hdl, ldl, total_cholesterol, intelligence) %>%
+  # Subset to fields of interest
+  map(\(x) select(x, rsid, ea, nea, beta, trait)) %>%
+  reduce(full_join)
+
+summary_table
+```
+
+## Comparison
+
+We harmonise the summary stats and compare the direction of association we observed for the DHA-increasing alleles with what has been observed in previous literature for the same allele
+
+```{r compare-effect}
+summary_table %>%
+  full_join(dha_increaser) %>%
+  # Harmonise with DHA-increaser allele
+  transmute(
+    rsid,
+    trait,
+    beta_aligned = if_else(dha_increaser_allele == ea, beta, -1*beta)
+  ) %>%
+  mutate(expected_direction = if_else(beta_aligned > 0, "Increasing", "Decreasing")) %>%
+  full_join(observed_direction) %>%
+  arrange(trait, rsid) %>%
+  knitr::kable()
+```
