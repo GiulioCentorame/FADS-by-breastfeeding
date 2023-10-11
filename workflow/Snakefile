@@ -35,10 +35,21 @@ ancestry_group = ["white_british", "any_ancestry"]
 
 rule all:
     input:
-        expand(f"{TEMP_DIR}/clean/{{ancestry_group}}/model_summaries_additive.RData",
-               ancestry_group = ancestry_group),
-        expand(f"{TEMP_DIR}/clean/{{ancestry_group}}/model_summaries_recessive.RData",
-               ancestry_group = ancestry_group),
+        "results/notebooks/plots_paper.html",
+        expand(
+            "results/notebooks/{{ancestry_group}}/histograms.html",
+            ancestry_group = ancestry_group
+        ),
+        expand(
+            "results/notebooks/{{ancestry_group}}/descriptives.html",
+            ancestry_group = ancestry_group
+        ),
+        expand(
+            "results/notebooks/{{ancestry_group}}/phenotypic_analysis.html",
+            ancestry_group = ancestry_group
+        ),
+        "results/notebooks/direction_effect.html"
+
 
 include: "rules/phenotypes.smk"
 
