@@ -57,6 +57,8 @@ include: "rules/variants.smk"
 
 include: "rules/analysis.smk"
 
+include: "rules/notebooks.smk"
+
 # rule Example:
 #     input:
 #         file=""
