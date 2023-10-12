@@ -31,7 +31,7 @@ rule render_paper_plots:
     input:
        f"{TEMP_DIR}/clean/white_british/model_summaries_additive.RData",
        f"{TEMP_DIR}/clean/any_ancestry/model_summaries_additive.RData",
-       f"{TEMP_DIR}/clean/white_british/model_summaries_recessive.RData",
+        f"{TEMP_DIR}/clean/white_british/data_for_models.RData",
     output:
         "results/notebooks/plots_paper.html"
     envmodules:
