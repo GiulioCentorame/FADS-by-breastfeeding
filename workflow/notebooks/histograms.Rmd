@@ -72,10 +72,6 @@ histogram(number_of_offspring)
 histogram(paired_associate_learning_correct_word_pairs)
 ```
 
-```{r pairs-matching}
-histogram(pairs_matching_incorrect_matches)
-```
-
 ```{r reaction-time}
 histogram(reaction_time_ms)
 ```
