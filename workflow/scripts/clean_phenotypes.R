@@ -1506,8 +1506,8 @@ clean_phenotypes <- function(data_path,
     symbol_digit_substitution_correct_answers = symbol_digit_substitution_correct_answers,
     trailmaking_path_1 = trailmaking_path_1,
     trailmaking_path_2 = trailmaking_path_2,
-    trailmaking_2_minus_1 = trailmaking_2_minus_1,
-    pairs_matching_incorrect_matches = pairs_matching_incorrect_matches
+    trailmaking_2_minus_1 = trailmaking_2_minus_1 # ,
+    # pairs_matching_incorrect_matches = pairs_matching_incorrect_matches
   )
 
   ## List 2
@@ -1539,8 +1539,8 @@ clean_phenotypes <- function(data_path,
       heart_attack = heart_attack,
       stroke = stroke,
       hayfever_rhinitis_eczema = hayfever_rhinitis_eczema,
-      type2_diabetes = type2_diabetes,
-      prospective_memory_binary = prospective_memory_binary
+      type2_diabetes = type2_diabetes # ,
+      # prospective_memory_binary = prospective_memory_binary
     )
 
 

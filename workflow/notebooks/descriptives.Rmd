@@ -171,8 +171,8 @@ table3_labels <-
       correct_answers_matrix_completion_raw = "Matrix pattern completion (correct answers)",
       reaction_time_ms_raw = "Reaction time (ms)",
       tower_rearranging_correct_answers_raw = "Tower rearranging (correct answers)",
-      paired_associate_learning_correct_word_pairs_raw = "Paired associate learning (correct word pairs)",
-      pairs_matching_incorrect_matches_raw = "Pairs matching (incorrect matches)"
+      paired_associate_learning_correct_word_pairs_raw = "Paired associate learning (correct word pairs)" #,
+      #pairs_matching_incorrect_matches_raw = "Pairs matching (incorrect matches)"
       ),
     groups = list("", "Breastfed as a baby")
   )
@@ -272,8 +272,8 @@ list_continuous_multiple_delivery_first_instance_breastfeeding %>%
   "Symbol digit substitution (correct answers)" = symbol_digit_substitution_correct_answers,
   "Trailmaking path 1 (ds)" = trailmaking_path_1,
   "Trailmaking path 2 (ds)" = trailmaking_path_2,
-  "Trailmaking path 2-1 (ds)" = trailmaking_2_minus_1,
-  "Pairs matching (incorrect matches)" = pairs_matching_incorrect_matches
+  "Trailmaking path 2-1 (ds)" = trailmaking_2_minus_1 #,
+  #"Pairs matching (incorrect matches)" = pairs_matching_incorrect_matches
 ) %>%
   tbl_stack(group_header = names(.)) %>%
   bold_levels()
@@ -471,8 +471,8 @@ list_continuous_multiple_delivery_first_instance_breastfeeding %>%
   "Symbol digit substitution (correct answers)" = symbol_digit_substitution_correct_answers,
   "Trailmaking path 1 (ds)" = trailmaking_path_1,
   "Trailmaking path 2 (ds)" = trailmaking_path_2,
-  "Trailmaking path 2-1 (ds)" = trailmaking_2_minus_1,
-  "Pairs matching (incorrect matches)" = pairs_matching_incorrect_matches
+  "Trailmaking path 2-1 (ds)" = trailmaking_2_minus_1 #,
+  #"Pairs matching (incorrect matches)" = pairs_matching_incorrect_matches
 ) %>%
   tbl_stack(group_header = names(.)) %>%
   bold_levels()
@@ -641,8 +641,8 @@ list_continuous_multiple_delivery_first_instance_breastfeeding %>%
   "Symbol digit substitution (correct answers)" = symbol_digit_substitution_correct_answers,
   "Trailmaking path 1 (ds)" = trailmaking_path_1,
   "Trailmaking path 2 (ds)" = trailmaking_path_2,
-  "Trailmaking path 2-1 (ds)" = trailmaking_2_minus_1,
-  "Pairs matching (incorrect matches)" = pairs_matching_incorrect_matches
+  "Trailmaking path 2-1 (ds)" = trailmaking_2_minus_1 #,
+  #"Pairs matching (incorrect matches)" = pairs_matching_incorrect_matches
 ) %>%
   tbl_stack(group_header = names(.)) %>%
   bold_levels()
@@ -811,8 +811,8 @@ list_continuous_multiple_delivery_first_instance_breastfeeding %>%
   "Symbol digit substitution (correct answers)" = symbol_digit_substitution_correct_answers,
   "Trailmaking path 1 (ds)" = trailmaking_path_1,
   "Trailmaking path 2 (ds)" = trailmaking_path_2,
-  "Trailmaking path 2-1 (ds)" = trailmaking_2_minus_1,
-  "Pairs matching (incorrect matches)" = pairs_matching_incorrect_matches
+  "Trailmaking path 2-1 (ds)" = trailmaking_2_minus_1 #,
+  #"Pairs matching (incorrect matches)" = pairs_matching_incorrect_matches
 ) %>%
   tbl_stack(group_header = names(.)) %>%
   bold_levels()

@@ -164,8 +164,8 @@ list(cont_sd_unadj,
      "Diastolic blood pressure (mmHg, controlling for medication use)" = dbp,
      "Matrix pattern completion (correct answers)" = correct_answers_matrix_completion,
      "Reaction time (ms)" = reaction_time_ms,
-     "Tower rearranging (correct answers)" = tower_rearranging_correct_answers,
-     "Paired associate learning (correct word pairs)" =  paired_associate_learning_correct_word_pairs
+     "Tower rearranging (correct answers)" = tower_rearranging_correct_answers #,
+     #"Paired associate learning (correct word pairs)" =  paired_associate_learning_correct_word_pairs
      )
     ) %>%
   pmap(

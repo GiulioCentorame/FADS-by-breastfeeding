@@ -69,7 +69,6 @@ continuous_traits <-
 )
 
 binary_traits <- c(
-    "Prospective memory",
     "Angina pectoris",
     "Myocardial infarction",
     "Stroke",
