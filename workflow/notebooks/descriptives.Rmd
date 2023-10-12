@@ -11,7 +11,6 @@ theme:
 
 ```{r setup, include = FALSE}
 
-library(table1)
 library(dplyr)
 library(purrr)
 library(tidyr)
