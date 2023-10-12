@@ -4,7 +4,8 @@ rule render_descriptive_analysis:
     output:
         "results/notebooks/{ancestry_group}/descriptives.html"
     envmodules:
-        "r/4.2.1-foss-2021a"
+        "r/4.2.1-foss-2022a",
+        "pandoc/3.1.2"
     script:
         "../notebooks/descriptives.Rmd"
 
@@ -14,7 +15,8 @@ rule render_phenotypic_associations:
     output:
         "results/notebooks/{ancestry_group}/phenotypic_analysis.html"
     envmodules:
-        "r/4.2.1-foss-2021a"
+        "r/4.2.1-foss-2022a",
+        "pandoc/3.1.2"
     script:
         "../notebooks/phenotypic_analysis.Rmd"
 
@@ -23,7 +25,8 @@ rule render_direction_effect_notebook:
     output:
         "results/notebooks/direction_effect.html"
     envmodules:
-        "r/4.2.1-foss-2021a"
+        "r/4.2.1-foss-2022a",
+        "pandoc/3.1.2"
     script:
         "../notebooks/direction_effect.Rmd"
 
@@ -35,7 +38,8 @@ rule render_paper_plots:
     output:
         "results/notebooks/plots_paper.html"
     envmodules:
-        "r/4.2.1-foss-2021a"
+        "r/4.2.1-foss-2022a",
+        "pandoc/3.1.2"
     script:
         "../notebooks/plots_paper.Rmd"
 
@@ -46,6 +50,7 @@ rule render_histogram_plots:
     output:
         "results/notebooks/{ancestry_group}/histograms.html"
     envmodules:
-        "r/4.2.1-foss-2021a"
+        "r/4.2.1-foss-2022a",
+        "pandoc/3.1.2"
     script:
         "../notebooks/histograms.Rmd"
