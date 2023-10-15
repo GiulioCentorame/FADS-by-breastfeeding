@@ -37,6 +37,10 @@ rule all:
     input:
         "results/notebooks/plots_paper.html",
         expand(
+            f"{TEMP_DIR}/clean/{{ancestry_group}}/model_summaries_recessive.RData",
+            ancestry_group = ancestry_group
+        ),
+        expand(
             "results/notebooks/{ancestry_group}/histograms.html",
             ancestry_group = ancestry_group
         ),
