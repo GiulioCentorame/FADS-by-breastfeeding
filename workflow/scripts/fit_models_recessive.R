@@ -64,7 +64,16 @@ fit_models_recessive <- function(data_path,
   data_binary <-
     list_binary_first_instance_breastfeeding %>%
     map(\(x) full_join(x, common_data, by = "eid") %>%
-      drop_na())
+      drop_na()) %>%
+    map(
+      \(x) x %>%
+        mutate(breastfed_as_a_baby = "Total") %>%
+        bind_rows(
+          total = .,
+          stratified = x,
+          .id = "type"
+        )
+    )
 
   # Unadjusted
   models_binary_unadj <-
@@ -137,7 +146,16 @@ fit_models_recessive <- function(data_path,
   data_continuous_sd <-
     list_continuous_single_delivery_first_instance_breastfeeding %>%
     map(\(x) full_join(x, common_data, by = "eid") %>%
-      drop_na())
+      drop_na()) %>%
+    map(
+      \(x) x %>%
+        mutate(breastfed_as_a_baby = "Total") %>%
+        bind_rows(
+          total = .,
+          stratified = x,
+          .id = "type"
+        )
+    )
 
   models_continuous_sd_unadj <-
     variants_recessive %>%
@@ -206,7 +224,16 @@ fit_models_recessive <- function(data_path,
   data_continuous_md <-
     list_continuous_multiple_delivery_first_instance_breastfeeding %>%
     map(\(x) full_join(x, common_data, by = "eid") %>%
-      drop_na())
+      drop_na()) %>%
+    map(
+      \(x) x %>%
+        mutate(breastfed_as_a_baby = "Total") %>%
+        bind_rows(
+          total = .,
+          stratified = x,
+          .id = "type"
+        )
+    )
 
   # Unadjusted
   models_continuous_md_unadj <-
@@ -276,13 +303,13 @@ fit_models_recessive <- function(data_path,
   factor_mapping <-
     c(
       fluid_intelligence = "Verbal-numerical reasoning",
-      proportion_correct_matrix_completion = "Matrix pattern completion",
+      correct_answers_matrix_completion = "Matrix pattern completion",
       reaction_time_ms = "Reaction time",
       tower_rearranging_correct_answers = "Tower rearranging",
       numeric_memory_max_digits = "Numeric memory",
       pairs_matching_incorrect_matches = "Visual memory",
       paired_associate_learning_correct_word_pairs = "Paired associate learning",
-      prospective_memory_binary = "Prospective memory*",
+      prospective_memory_binary = "Prospective memory",
       symbol_digit_substitution_correct_answers = "Symbol digit substitution",
       trailmaking_path_1 = "Trailmaking A",
       trailmaking_path_2 = "Trailmaking B",
