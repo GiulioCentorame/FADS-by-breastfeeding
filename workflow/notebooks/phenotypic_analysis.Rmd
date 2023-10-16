@@ -184,8 +184,7 @@ list(cont_sd_unadj,
                         "sex" = "Sex",
                         "breastfed_as_a_baby" = "Breastfed as a baby",
                         "tdi" = "Townsend deprivation index",
-                        "deliveryOnline" = "Delivery mode"),
-    gof_map = c("nobs", "r.squared"))
+                        "deliveryOnline" = "Delivery mode"))
 
 # Free some more memory
 rm(cont_sd_unadj, 
@@ -262,8 +261,7 @@ list(cont_md_unadj,
                         "sex" = "Sex",
                         "breastfed_as_a_baby" = "Breastfed as a baby",
                         "tdi" = "Townsend deprivation index",
-                        "deliveryOnline" = "Delivery mode"),
-    gof_map = c("nobs", "r.squared"))
+                        "deliveryOnline" = "Delivery mode"))
 
 # Free even more memory
 
@@ -340,8 +338,7 @@ list(bin_unadj,
                         "sex" = "Sex",
                         "breastfed_as_a_baby" = "Breastfed as a baby",
                         "tdi" = "Townsend deprivation index",
-                        "delivery" = "Delivery mode"),
-    gof_map = c("nobs", "r.squared"))
+                        "delivery" = "Delivery mode"))
 
 # Free some more memory
 
