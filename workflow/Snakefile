@@ -3,6 +3,7 @@
 # https://snakemake.readthedocs.io/en/stable/snakefiles/best_practices.html,
 # in particular regarding the standardized folder structure mentioned there. 
 import os
+import os.path as op
 import sys
 from snakemake.utils import min_version
 min_version("7.0")
@@ -52,7 +53,8 @@ rule all:
             "results/notebooks/{ancestry_group}/phenotypic_analysis.html",
             ancestry_group = ancestry_group
         ),
-        "results/notebooks/direction_effect.html"
+        "results/notebooks/direction_effect.html",
+        f"{TEMP_DIR}/variants/ld.vcor"
 
 
 include: "rules/phenotypes.smk"

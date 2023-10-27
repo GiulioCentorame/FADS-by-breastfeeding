@@ -47,3 +47,29 @@ rule compute_FADS_variants_summary_stats:
         -snp-stats \
         -osnp {output.snpstats}
         """
+
+rule get_ld:
+    input:
+        bgen = config.get("chromosome_11_bgen"),
+        sample = config.get("sample_file"),
+        withdrawals = config.get("withdrawals"),
+        std_exclusions = config.get("std_exclusions"),
+        related_individuals = config.get("related_individuals"),
+        nonwhitebritish = config.get("nonwhitebritish")
+    output:
+        output_file = f"{TEMP_DIR}/variants/ld.vcor"
+    threads: 36
+    resources:
+        mem_mb=500000
+    params:
+        output_prefix = lambda wildcards, input: op.splitext(output["output_file"])[0]
+    shell:
+        """
+        plink2 \
+        --bgen {input.bgen} ref-first \
+        --sample {input.sample} \
+        --ld-snps rs1535,rs174575,rs174583 \
+        --remove {input.withdrawals} {input.std_exclusions} {input.related_individuals} {input.nonwhitebritish} \
+        --r2-unphased \
+        --out {params.output_prefix}
+        """
