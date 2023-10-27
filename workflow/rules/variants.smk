@@ -62,7 +62,7 @@ rule get_ld:
     resources:
         mem_mb=500000
     params:
-        output_prefix = lambda wildcards, input: op.splitext(output["output_file"])[0]
+        output_prefix = lambda wildcards, output: op.splitext(output["output_file"])[0]
     shell:
         """
         plink2 \
