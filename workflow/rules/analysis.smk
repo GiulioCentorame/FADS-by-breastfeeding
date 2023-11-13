@@ -7,7 +7,7 @@ rule merge_phenotypes_and_variants:
     output:
         merged = f"{TEMP_DIR}/merged/{{ancestry_group}}/data.rds"
     envmodules:
-        "r/4.2.1-foss-2021a"
+        "r/4.2.1-foss-2022a"
     conda:
         "../envs/clean_phenotypes.yaml"
     script:
@@ -24,7 +24,7 @@ rule clean_SBP:
         disk_mb=4000,
         time_min=400
     envmodules:
-        "r/4.2.1-foss-2021a"
+        "r/4.2.1-foss-2022a"
     script:
         "../scripts/SBP.R"
 
@@ -39,7 +39,7 @@ rule clean_DBP:
         disk_mb=4000,
         time_min=400
     envmodules:
-        "r/4.2.1-foss-2021a"
+        "r/4.2.1-foss-2022a"
     script:
         "../scripts/DBP.R"
 
@@ -49,7 +49,7 @@ rule clean_phenotypes:
     output:
         output = f"{TEMP_DIR}/clean/{{ancestry_group}}/data_for_models.RData",
     envmodules:
-        "r/4.2.1-foss-2021a"
+        "r/4.2.1-foss-2022a"
     script:
         "../scripts/clean_phenotypes.R"
 
@@ -62,7 +62,7 @@ rule fit_models_additive:
     resources:
         mem_mb=500000
     envmodules:
-        "r/4.2.1-foss-2021a"
+        "r/4.2.1-foss-2022a"
     script:
         "../scripts/fit_models_additive.R"
 
@@ -75,6 +75,6 @@ rule fit_models_recessive:
     resources:
         mem_mb=500000
     envmodules:
-        "r/4.2.1-foss-2021a"
+        "r/4.2.1-foss-2022a"
     script:
         "../scripts/fit_models_recessive.R"

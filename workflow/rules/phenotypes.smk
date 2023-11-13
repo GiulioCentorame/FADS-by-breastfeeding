@@ -40,7 +40,7 @@ rule subset_participants_white_british:
     output:
         filtered_data = f"{TEMP_DIR}/phenotypes/white_british/subset.rds"
     envmodules:
-        "r/4.2.1-foss-2021a"
+        "r/4.2.1-foss-2022a"
     # conda:
     #     "../envs/r.yaml"
     threads: 96
