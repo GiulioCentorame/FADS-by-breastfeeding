@@ -54,7 +54,7 @@ rule all:
             ancestry_group = ancestry_group
         ),
         "results/notebooks/direction_effect.html",
-        f"{TEMP_DIR}/ld/ld.sqlite"
+        f"{TEMP_DIR}/ld/ld_table.tsv"
 
 
 include: "rules/phenotypes.smk"

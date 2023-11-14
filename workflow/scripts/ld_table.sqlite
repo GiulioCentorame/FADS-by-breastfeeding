@@ -1,0 +1,12 @@
+CREATE VIEW MyRView AS
+SELECT A.name AS `analysis`,
+V1.id AS g1_id, V1.rsid AS `g1_rsid`, V1.chromosome AS `g1_chromosome`, V1.position AS `g1_position`,
+V2.id AS g2_id, V2.rsid AS `g2_rsid`, V2.chromosome AS `g2_chromosome`, V2.position AS `g2_position`,
+R.*, (R.encoded_r-1024.0)/1024 AS r,
+F1.frequency AS g1_frequency, F2.frequency AS g2_frequency
+FROM R
+INNER JOIN Variant V1 ON V1.id = g1_id
+INNER JOIN Variant V2 ON V2.id = g2_id
+CROSS JOIN Analysis A ON A.id = R.analysis_id
+CROSS JOIN Frequency F1 ON F1.analysis_id == R.analysis_id AND F1.variant_id == R.g1_id
+CROSS JOIN Frequency F2 ON F2.analysis_id == R.analysis_id AND F2.variant_id == R.g2_id;

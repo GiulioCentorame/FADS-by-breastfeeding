@@ -81,16 +81,44 @@ rule compute_FADS_variants_summary_stats:
         """
 
 # TODO rewrite with ldbird
-rule get_ld:
+rule calculate_ld:
     input:
         bgen = f"{TEMP_DIR}/variants/filtered.bgen",
         sample = f"{TEMP_DIR}/variants/filtered.sample"
     output:
         sqlite = f"{TEMP_DIR}/ld/ld.sqlite"
+    envmodules:
+        "sqlite/3.42.0-gcccore-12.3.0"
+    params:
+        sqlite_query = "workflow/scripts/ld_table.sqlite"
     shell:
+        # The first call runs LDBIRD to compute LD
+        # The second call runs a sqlite script to get a
+        # table with all the pairs of SNPs
+        # (from https://www.well.ox.ac.uk/~gav/ldbird/documentation/getting_started.html)
+        # HACK this is a single step since sqlite is a pain to run in batch mode with
+        # parameters, it's easier to just modify the file in place
         """
         ldbird \
         -g1 {input.bgen} \
         -s {input.sample} \
         -o {output.sqlite}
+
+        sqlite3 -batch {output.sqlite} < {params.sqlite_query}
+        """
+
+rule get_ld_table:
+    input:
+        sqlite = f"{TEMP_DIR}/ld/ld.sqlite"
+    output:
+        ld_table = f"{TEMP_DIR}/ld/ld_table.tsv"
+    envmodules:
+        "sqlite/3.42.0-gcccore-12.3.0"
+    shell:
+        """
+        sqlite3 \
+        -column \
+        -header \
+        {input.sqlite} \
+        ".mode tabs" "SELECT * FROM MyRView" > {output.ld_table}
         """
