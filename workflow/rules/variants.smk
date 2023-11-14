@@ -122,3 +122,13 @@ rule get_ld_table:
         {input.sqlite} \
         ".mode tabs" "SELECT * FROM MyRView" > {output.ld_table}
         """
+
+rule compute_rsq_matrix:
+    input:
+        f"{TEMP_DIR}/ld/ld_table.tsv"
+    output:
+        "results/ld.tsv"
+    envmodules:
+        "r/4.2.1-foss-2022a"
+    script:
+        "../scripts/ld.R"
