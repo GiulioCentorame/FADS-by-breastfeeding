@@ -76,6 +76,10 @@ binary_traits <- c(
     "Type-II diabetes"
 )
 
+## Variables that should be consistent in all plots: ##
+# Forest plot ranges for quantitative traits
+
+quantitative_range <- c(-0.09, 0.09)
 ```
 
 # Additive model
@@ -86,7 +90,7 @@ summary_stats_plots %>%
   filter(outcome %in% continuous_traits,
          covariates == "Adjusted for age, sex, and PCs",
          variant == "rs174575") %>%
-  ggplot(aes(x = estimate, y = outcome)) +
+  ggplot(aes(x = estimate, y = fct_rev(outcome))) +
   geom_pointrange(aes(colour = stratum, 
                       group = variant, 
                      xmin = estimate - 1.96*std.error,
@@ -104,6 +108,7 @@ summary_stats_plots %>%
        x = "Regression coefficient (z-scores)",
        y = ""
        ) +
+  scale_x_continuous(limits = quantitative_range)+
   theme(axis.text.x = element_text(size = 8, 
                                    angle = 45, 
                                    hjust=1
@@ -124,7 +129,7 @@ summary_stats_plots %>%
   filter(outcome %in% cognitive_measures,
          covariates == "Adjusted for age, sex, and PCs",
          variant == "rs174575") %>%
- ggplot(aes(x = estimate, y = outcome)) +
+ ggplot(aes(x = estimate, y = fct_rev(outcome))) +
   geom_pointrange(aes(colour = stratum, 
                       group = variant, 
                      xmin = estimate - 1.96*std.error,
@@ -136,6 +141,7 @@ summary_stats_plots %>%
   #facet_grid(~variant) +
   theme_bw() +
   ggsci::scale_colour_npg()+
+  scale_x_continuous(limits = quantitative_range)+
   labs(#title = "SNP effect estimate by breastfeeding status",
        #subtitle = "Error bars represent 95% confidence intervals",
        colour = "Breastfeeding status",
@@ -161,7 +167,7 @@ summary_stats_plots %>%
   filter(outcome %in% binary_traits,
          covariates == "Adjusted for age, sex, and PCs",
          variant == "rs174575") %>%
-  ggplot(aes(x = estimate, y = outcome)) +
+  ggplot(aes(x = estimate, y = fct_rev(outcome))) +
   geom_pointrange(aes(colour = stratum, 
                       group = variant, 
                      xmin = estimate - 1.96*std.error,
@@ -233,6 +239,7 @@ summary_stats_plots %>%
                   shape = 3
                      ) +
   facet_grid(variant ~ covariates) +
+  scale_y_continuous(limits = quantitative_range)+
   theme_bw() +
     ggsci::scale_colour_npg()+
   labs(#title = "SNP effect estimate by breastfeeding status",
@@ -260,6 +267,7 @@ summary_stats_plots %>%
                   shape = 3
                      ) +
   facet_grid(variant ~ covariates) +
+  scale_y_continuous(limits = quantitative_range)+
   theme_bw() +
   ggsci::scale_colour_npg()+
   labs(#title = "SNP effect estimate by breastfeeding status",
@@ -304,6 +312,16 @@ summary_stats_plots %>%
 ```{r cognitive-measures-forest-plot-supplementary-any-ancestry, echo=FALSE, fig.height=8, fig.width=10}
 
 base::load(snakemake@input[[2]])
+#base::load("../../temp/clean/any_ancestry/model_summaries_additive.RData")
+
+strata_lookup <- c("Yes" = "Breastfed",
+                   "No" = "Bottlefed",
+                   "Missing" = "Missing")
+
+summary_stats_plots <-
+  summary_stats_plots%>%
+  mutate(variant = stringi::stri_extract_first_regex(variant, "rs.+[0-9]"),
+         stratum = recode(stratum, !!!strata_lookup))
 
 summary_stats_plots %>%
   filter(outcome %in% cognitive_measures) %>%
@@ -316,6 +334,7 @@ summary_stats_plots %>%
                     fatten = 0,
                   shape = 3
                      ) +
+  scale_y_continuous(limits = quantitative_range)+
   facet_grid(variant ~ covariates) +
   theme_bw() +
   ggsci::scale_colour_npg()+

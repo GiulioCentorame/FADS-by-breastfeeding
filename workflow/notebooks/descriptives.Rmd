@@ -137,7 +137,6 @@ table1(table1_strata, table1_labels, groupspan = c(1, 3), data = descriptive_dat
 descriptive_data %>%
   select(yob, sex, tdi, breastfed_as_a_baby) %>%
   tbl_summary(by = breastfed_as_a_baby, 
-              percent = "cell",
               label = list(
                 yob ~ "Year of birth",
                 sex ~ "Sex",
@@ -145,7 +144,8 @@ descriptive_data %>%
               ),
               type = list(all_continuous() ~ 'continuous2'),
               statistic = all_continuous() ~ c("{mean} ({sd})",
-                                               "{median} [{min}, {max}]")
+                                               "{median} [{min}, {max}]"),
+              missing_text = "N missing"
               ) %>%
   add_overall(last = TRUE, col_label = "**Total**, N = {n}") %>%
   modify_header(label = " ")
