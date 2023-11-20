@@ -59,7 +59,7 @@ rule subset_participants_any_ancestry:
     output:
         filtered_data = f"{TEMP_DIR}/phenotypes/any_ancestry/subset.rds"
     envmodules:
-        "r/4.2.1-foss-2021a"
+        "r/4.2.1-foss-2022a"
     # conda:
     #     "../envs/r.yaml"
     threads: 96

@@ -54,7 +54,8 @@ rule all:
             ancestry_group = ancestry_group
         ),
         "results/notebooks/direction_effect.html",
-        "results/ld.tsv"
+        "results/ld.tsv",
+        "results/notebooks/phenotypic_forest_plot.html"
 
 
 include: "rules/phenotypes.smk"
