@@ -16,6 +16,7 @@ library(gtsummary)
 library(modelsummary)
 library(broom)
 library(ggplot2)
+library(patchwork)
 
 # Load data in
 base::load(snakemake@input[[1]])
@@ -325,10 +326,10 @@ table_bin <-
     \(x)
     rename_list(
       x,
-      "Angina" = angina,
-    "Heart attack" = heart_attack,
+      "Angina pectoros" = angina,
+    "Myocardial infarction" = heart_attack,
     "Stroke" = stroke,
-    "Type-II Diabetes" = type2_diabetes,
+    "Type-II diabetes" = type2_diabetes,
     "Hayfever, rhinitis, or eczema" = hayfever_rhinitis_eczema
      )
     ) %>%
@@ -492,7 +493,7 @@ table_bin %>%
 binary_forestplot
 ```
 
-```{r}
+```{r all, echo = FALSE, fig.height= 10, fig.width= 6}
 
 # This just composes the plot as normal
 cognitive_forestplot / continuous_forestplot / binary_forestplot
