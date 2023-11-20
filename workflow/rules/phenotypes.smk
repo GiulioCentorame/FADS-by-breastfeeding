@@ -18,7 +18,7 @@ rule create_phenotypes_file:
     output:
         rds_file = f"{TEMP_DIR}/phenotypes/all_phenotypes.rds"
     envmodules:
-        "r/4.2.1-foss-2021a"
+        "r/4.2.1-foss-2022a"
     # conda:
     #     "../envs/r.yaml"
     threads: 96
