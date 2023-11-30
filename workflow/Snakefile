@@ -36,6 +36,7 @@ ancestry_group = ["white_british", "any_ancestry"]
 
 rule all:
     input:
+        f"{TEMP_DIR}/variants/variants.snp-stats",
         "results/notebooks/plots_paper.html",
         expand(
             f"{TEMP_DIR}/clean/{{ancestry_group}}/model_summaries_recessive.RData",
