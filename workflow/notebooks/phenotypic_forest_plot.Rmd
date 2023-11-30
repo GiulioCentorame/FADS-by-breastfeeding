@@ -326,7 +326,7 @@ table_bin <-
     \(x)
     rename_list(
       x,
-      "Angina pectoros" = angina,
+      "Angina pectoris" = angina,
     "Myocardial infarction" = heart_attack,
     "Stroke" = stroke,
     "Type-II diabetes" = type2_diabetes,
