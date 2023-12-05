@@ -17,6 +17,8 @@ rule render_phenotypic_associations:
     envmodules:
         "r/4.2.1-foss-2022a",
         "pandoc/3.1.2"
+    resources:
+        mem_mb=50000
     script:
         "../notebooks/phenotypic_analysis.Rmd"
 
