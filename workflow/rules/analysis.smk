@@ -60,11 +60,13 @@ rule fit_models_additive:
         output = f"{TEMP_DIR}/clean/{{ancestry_group}}/model_summaries_additive.RData"
     threads: 96
     resources:
-        mem_mb=500000
+        mem_mb=100000,
     envmodules:
         "r/4.2.1-foss-2022a"
+    params:
+        recessive = False,
     script:
-        "../scripts/fit_models_additive.R"
+        "../scripts/fit_models.R"
 
 rule fit_models_recessive:
     input:
@@ -73,8 +75,10 @@ rule fit_models_recessive:
         output = f"{TEMP_DIR}/clean/{{ancestry_group}}/model_summaries_recessive.RData"
     threads: 96
     resources:
-        mem_mb=500000
+        mem_mb=100000,
     envmodules:
         "r/4.2.1-foss-2022a"
+    params:
+        recessive = True,
     script:
-        "../scripts/fit_models_recessive.R"
+        "../scripts/fit_models.R"
