@@ -104,7 +104,7 @@ rm(common_data, descriptive_data)
 
 # Variables for all plots
 
-quantitative_range <- c(-0.08, 0.18)
+quantitative_range <- c(-0.125, 0.18)
 ```
 
 # Variable coding
@@ -352,6 +352,8 @@ rm(bin_unadj,
    bin_age_sex_tdi,
    bin_age_sex_tdi_pcs)
 ```
+
+# Plots
 
 ```{r plots-cognitive, echo = FALSE}
 
