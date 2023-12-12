@@ -139,9 +139,9 @@ clean_phenotypes <- function(data_path,
       rs174583_C
     ) %>%
     mutate(
-      rs1535_GG = round(2 - rs1535_A) == 2,
-      rs174575_GG = round(2 - rs174575_C) == 2,
-      rs174583_TT = round(2 - rs174583_C) == 2
+      rs1535_GG = as.numeric(round(2 - rs1535_A) == 2),
+      rs174575_GG = as.numeric(round(2 - rs174575_C) == 2),
+      rs174583_TT = as.numeric(round(2 - rs174583_C) == 2)
     )
 
   # Covariates
