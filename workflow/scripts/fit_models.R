@@ -14,6 +14,8 @@ nested_tibble_to_coeff_tibble <- function(data) {
     unnest(cols = c(model))
 }
 
+base::save.image("debug.RData")
+
 # MAIN
 
 fit_models <- function(data_path,
