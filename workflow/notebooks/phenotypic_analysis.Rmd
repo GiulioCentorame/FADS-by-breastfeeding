@@ -17,6 +17,7 @@ library(modelsummary)
 
 # Load data in
 base::load(snakemake@input[[1]])
+#base::load("../../temp/clean/white_british/data_for_models.RData")
 
 descriptive_data <-
   # Round dosage to allelic count
@@ -32,7 +33,9 @@ descriptive_data <-
     sex = recode(sex, Female = 0, Male = 1)
     ) %>%
   rename(yob = year_of_birth_f34_0_0,
-         tdi = townsend_deprivation_index_at_recruitment_f189_0_0)
+         tdi = townsend_deprivation_index_at_recruitment_f189_0_0) %>%
+  mutate(yob = scale(yob),
+         tdi = scale(tdi))
 
 rename_list <- function(.data, ...) {
     mapping <- sapply(

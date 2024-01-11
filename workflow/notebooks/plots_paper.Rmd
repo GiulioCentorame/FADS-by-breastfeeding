@@ -22,7 +22,7 @@ library(patchwork)
 show_table <- function(data){
   data %>%
     DT::datatable(filter = 'top', 
-                options = list(pageLength = 5, autoWidth = TRUE)
+                  options = list(pageLength = 5, autoWidth = TRUE)
   )
 }
 
