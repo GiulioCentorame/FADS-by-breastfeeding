@@ -32,10 +32,10 @@ descriptive_data <-
       ),
     sex = recode(sex, Female = 0, Male = 1)
     ) %>%
-  rename(yob = year_of_birth_f34_0_0,
-         tdi = townsend_deprivation_index_at_recruitment_f189_0_0) %>%
-  mutate(yob = scale(yob),
-         tdi = scale(tdi))
+  mutate(
+    yob = scale(year_of_birth_f34_0_0),
+    tdi = scale(townsend_deprivation_index_at_recruitment_f189_0_0)
+    )
 
 rename_list <- function(.data, ...) {
     mapping <- sapply(
@@ -85,19 +85,22 @@ formula_bf_age_sex_tdi_pcs <-
 
 list_continuous_single_delivery_first_instance_breastfeeding <-
   list_continuous_single_delivery_first_instance_breastfeeding %>%
-  map(\(x) inner_join(x, descriptive_data, by = "eid"))
+  map(\(x) inner_join(x, descriptive_data, by = "eid")) %>%
+  map(\(x) mutate(x, age = age_zscores))
 
 list_continuous_multiple_delivery_first_instance_breastfeeding <-
   within(list_continuous_multiple_delivery_first_instance_breastfeeding, rm(pairs_matching_incorrect_matches))
 
 list_continuous_multiple_delivery_first_instance_breastfeeding <-
   list_continuous_multiple_delivery_first_instance_breastfeeding %>%
-  map(\(x) inner_join(x, descriptive_data, by = "eid"))
+  map(\(x) inner_join(x, descriptive_data, by = "eid")) %>%
+  map(\(x) mutate(x, age = age_zscores))
 
 list_binary_first_instance_breastfeeding <-
   list_binary_first_instance_breastfeeding %>%
   map(\(x) inner_join(x, descriptive_data, by = "eid")) %>% 
-  within(., rm(prospective_memory_binary))
+  within(., rm(prospective_memory_binary)) %>%
+  map(\(x) mutate(x, age = age_zscores))
 
 rm(common_data, descriptive_data)
 ```
@@ -159,16 +162,16 @@ list(cont_sd_unadj,
      "Years of schooling" = years_of_schooling,
      "Number of offspring" = number_of_offspring,
      "Total cholesterol" = total_cholesterol,
-     "LDL cholesterol (mmol/l)" = ldl_direct,
-     "HDL cholesterol (mmol/l)" = hdl_direct,
-     "Triglycerides (mmol/l)" = triglycerides,
-     "Body mass index (kg/m²)" = bmi,
-     "Systolic blood pressure (mmHg, controlling for medication use)" = sbp,
-     "Diastolic blood pressure (mmHg, controlling for medication use)" = dbp,
-     "Matrix pattern completion (correct answers)" = correct_answers_matrix_completion,
-     "Reaction time (ms)" = reaction_time_ms,
-     "Tower rearranging (correct answers)" = tower_rearranging_correct_answers #,
-     #"Paired associate learning (correct word pairs)" =  paired_associate_learning_correct_word_pairs
+     "LDL cholesterol" = ldl_direct,
+     "HDL cholesterol" = hdl_direct,
+     "Triglycerides" = triglycerides,
+     "Body mass index" = bmi,
+     "Systolic blood pressure" = sbp,
+     "Diastolic blood pressure" = dbp,
+     "Matrix pattern completion" = correct_answers_matrix_completion,
+     "Reaction time" = reaction_time_ms,
+     "Tower rearranging" = tower_rearranging_correct_answers,
+     "Paired associate learning" =  paired_associate_learning_correct_word_pairs
      )
     ) %>%
   pmap(
@@ -240,12 +243,12 @@ list(cont_md_unadj,
     \(x)
     rename_list(
       x,
-       "Fluid intelligence" = fluid_intelligence,
-  "Numeric memory (max digits)" = numeric_memory_max_digits,
-  "Symbol digit substitution (correct answers)" = symbol_digit_substitution_correct_answers,
-  "Trailmaking path 1 (ds)" = trailmaking_path_1,
-  "Trailmaking path 2 (ds)" = trailmaking_path_2,
-  "Trailmaking path 2-1 (ds)" = trailmaking_2_minus_1
+      "Fluid intelligence" = fluid_intelligence,
+      "Numeric memory" = numeric_memory_max_digits,
+      "Symbol digit substitution" = symbol_digit_substitution_correct_answers,
+      "Trailmaking path A" = trailmaking_path_1,
+      "Trailmaking path B" = trailmaking_path_2,
+      "Trailmaking path B-A" = trailmaking_2_minus_1
      )
     ) %>%
   pmap(
@@ -319,11 +322,11 @@ list(bin_unadj,
     rename_list(
       x,
       "Angina" = angina,
-    "Heart attack" = heart_attack,
-    "Stroke" = stroke,
-    "Type-II Diabetes" = type2_diabetes,
-    "Hayfever, rhinitis, or eczema" = hayfever_rhinitis_eczema
-     )
+      "Heart attack" = heart_attack,
+      "Stroke" = stroke,
+      "Type-II Diabetes" = type2_diabetes,
+      "Hayfever, rhinitis, or eczema" = hayfever_rhinitis_eczema
+      )
     ) %>%
   pmap(
   \(unadj, agesex, tdi, pcs) {

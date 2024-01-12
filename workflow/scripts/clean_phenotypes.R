@@ -6,6 +6,7 @@ library(lubridate)
 library(stringi)
 library(forcats)
 library(dplyr)
+library(purrr)
 
 
 # Functions
@@ -194,6 +195,7 @@ clean_phenotypes <- function(data_path,
       heterozygosity_pca_corrected_f22004_0_0,
       genotype_measurement_well_f22008_0_0
     ) %>%
+    # Transform DOB and TDI in z-scores
     full_join(common_data, by = "eid")
 
   # Outcomes
@@ -1508,7 +1510,8 @@ clean_phenotypes <- function(data_path,
     trailmaking_path_2 = trailmaking_path_2,
     trailmaking_2_minus_1 = trailmaking_2_minus_1 # ,
     # pairs_matching_incorrect_matches = pairs_matching_incorrect_matches
-  )
+  ) %>%
+    map(\(x) mutate(x, age_zscores = scale(age)))
 
   ## List 2
   # Continuous outcome, only one delivery mode, first available instance breastfeeding
@@ -1528,7 +1531,8 @@ clean_phenotypes <- function(data_path,
       reaction_time_ms = reaction_time_ms,
       tower_rearranging_correct_answers = tower_rearranging_correct_answers,
       paired_associate_learning_correct_word_pairs = paired_associate_learning_correct_word_pairs
-    )
+    ) %>%
+    map(\(x) mutate(x, age_zscores = scale(age)))
 
   ## List 3
   # Binary outcome (= logistic regression), first available instance breastfeeding
@@ -1541,7 +1545,8 @@ clean_phenotypes <- function(data_path,
       hayfever_rhinitis_eczema = hayfever_rhinitis_eczema,
       type2_diabetes = type2_diabetes # ,
       # prospective_memory_binary = prospective_memory_binary
-    )
+    ) %>%
+    map(\(x) mutate(x, age_zscores = scale(age)))
 
 
   ## Write data

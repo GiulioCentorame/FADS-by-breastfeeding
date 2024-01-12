@@ -114,7 +114,7 @@ outcomes_continuous_single_delivery <-
 table1_labels <- 
   list(
     variables = list(
-      sex="Sex",
+      sex= "Sex",
       yob = "Year of birth",
       tdi = "Townsend deprivation index"
       ),
