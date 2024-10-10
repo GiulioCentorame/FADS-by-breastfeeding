@@ -1,8 +1,6 @@
-# Configuration option
+# Configuration options
 <!-- Describe how to configure the workflow (using config.yaml and maybe additional files). -->
 <!-- All of them need to be present with example entries inside of the config folder. -->
-
-A description of every valid option in `config.yaml`.
 
 Temporary workflow directory (e.g., in the HPC scratch space). It will be linked to `../temp` by the workflow
 
@@ -39,3 +37,7 @@ Path the file including the standard exclusions from the genetic data
 ``` yaml
 std_exclusions: /path/to/std_exclusions.txt
 ```
+
+# LDlink key
+
+This workflow requires an LDlink key in the main folder (named `LDlink_api_token.txt`)

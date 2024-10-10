@@ -112,7 +112,6 @@ fit_models <- function(data_path,
           ))
     )
 
-  # TODO find a better alternative, this is ugly
   all_models_binary <-
     bind_rows(
       bind_rows(models_binary_unadj),

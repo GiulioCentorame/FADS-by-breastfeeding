@@ -1,4 +1,4 @@
-# HACK use conda env when this gets fixed: https://github.com/conda-forge/r-arrow-feedstock/issues/56
+# HACK use conda env if/when this gets fixed: https://github.com/conda-forge/r-arrow-feedstock/issues/56
 renv::activate()
 library(ukbtools)
 library(dplyr)

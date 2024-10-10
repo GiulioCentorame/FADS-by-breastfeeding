@@ -13,8 +13,6 @@ rule extract_FADS_variants_allelic_dosage:
         output_prefix = f"{TEMP_DIR}/variants/variants"
     threads: 36
     resources:
-    # HACK find a less memory-intensive way to get this
-    # Potentially bgenix + plink2?
         mem_mb = 500000
     shell:
         """
@@ -60,7 +58,6 @@ rule extract_data_bgen:
         -os {output.filtered_sample}
         """
 
-# TODO rewrite with restricted sample only
 rule compute_FADS_variants_summary_stats:
     input:
         bgen = f"{TEMP_DIR}/variants/filtered.bgen",
@@ -68,7 +65,6 @@ rule compute_FADS_variants_summary_stats:
     output:
         snpstats = f"{TEMP_DIR}/variants/variants.snp-stats"
     conda:
-        # TODO add qctool to bioconda
         "../envs/snpstats.yaml"
     threads: 36
     shell:
@@ -80,7 +76,6 @@ rule compute_FADS_variants_summary_stats:
         -osnp {output.snpstats}
         """
 
-# TODO rewrite with ldbird
 rule calculate_ld:
     input:
         bgen = f"{TEMP_DIR}/variants/filtered.bgen",
@@ -96,7 +91,7 @@ rule calculate_ld:
         # The second call runs a sqlite script to get a
         # table with all the pairs of SNPs
         # (from https://www.well.ox.ac.uk/~gav/ldbird/documentation/getting_started.html)
-        # HACK this is a single step since sqlite is a pain to run in batch mode with
+        # NOTE: this is a single step since sqlite is a pain to run in batch mode with
         # parameters, it's easier to just modify the file in place
         """
         ldbird \

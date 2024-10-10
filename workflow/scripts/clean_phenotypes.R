@@ -286,7 +286,6 @@ clean_phenotypes <- function(data_path,
   ## Educational attainment
 
   # Variable levels to factor values
-  # FIXME this shouldn't be necessary with ukbtools?
   coding_to_qualifications <-
     c(
       "1" = "College or University degree",
@@ -1064,7 +1063,6 @@ clean_phenotypes <- function(data_path,
   # Each correct pair earns 2 points in round 1 & 2, 1 point in round 3
   # Each incorrect pair looses 1 point
   # Within each round, negative scores are brought back to zero
-  #  For that, replace NA with zero
 
   # age_assessment_centre <-
   #   data %>%

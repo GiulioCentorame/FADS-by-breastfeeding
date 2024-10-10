@@ -5,3 +5,4 @@ logs/**
 .snakemake/**
 .Rproj.user
 temp/**
+LDlink_api_token.txt
