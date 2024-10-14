@@ -8,6 +8,8 @@ output:
     number_sections: yes
 ---
 
+This notebook contains the code for the main text interaction plots
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 

@@ -4,10 +4,15 @@ author: "Giulio Centorame"
 date: "`r Sys.Date()`"
 format: html
 editor: visual
-theme:
-  light: flatly
-  dark: darkly
+output:
+  rmdformats::downcute:
+    toc: 6
+    number_sections: yes
 ---
+
+This notebook contains the descriptive analysis for exposures and outcomes of interests.
+
+The results of these analyses are available in Supplementary Table 3 and 6 to 8
 
 ```{r setup, include = FALSE}
 
@@ -39,7 +44,7 @@ rename_list <- function(.data, ...) {
 base::load(snakemake@input[[1]])
 #base::load("../../temp/clean/white_british/data_for_models.RData")
 
-# General descriptive statistics by 
+# General descriptive statistics by SNP
 descriptive_data <-
   # Round dosage to allelic count
   descriptive_data %>%
@@ -73,7 +78,7 @@ list_binary_first_instance_breastfeeding <-
   imap(\(x, trait) 
        x %>%
        mutate(
-         # I have given up understanding indirection for today, but this works
+         # This bit is a bit obscure, since it uses indirection, but it works
          # (see https://stackoverflow.com/questions/73710930/mutate-variable-using-indirection)
               !!sym(trait) := case_match(
               !!sym(trait),

@@ -11,3 +11,5 @@ sample_file: /path.sample
 withdrawals: /path/to/withdrawals.csv
 
 std_exclusions: /path/to/std_exclusions.txt
+
+LDlink_token: /path/to/LDlink_token.txt

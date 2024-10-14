@@ -497,7 +497,7 @@ binary_forestplot
 
 ```{r all, echo = FALSE, fig.height= 10, fig.width= 6}
 
-# This just composes the plot as normal
+# This just composes the plot stacking the parts together
 cognitive_forestplot / continuous_forestplot / binary_forestplot
   
 ```

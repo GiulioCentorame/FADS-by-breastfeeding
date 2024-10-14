@@ -4,6 +4,8 @@ format: html
 editor: visual
 ---
 
+This notebook contains plots with the distribution of continuous variables in our project.
+
 ```{r setup, echo = FALSE, message=FALSE, warning=FALSE, include=FALSE}
 library(dplyr)
 
@@ -20,7 +22,8 @@ rm(list_continuous_multiple_delivery_first_instance_breastfeeding,
 
 histogram <- function(data){
   axis_label <- 
-    # good old trick
+    # good old trick: get a string with the name for that object in the namespace
+    # e.g. data -> "data"
     # NOTE can't be in a pipe or you'll get "."
     deparse(substitute(data)) %>%
     gsub("_", " ", .) %>%

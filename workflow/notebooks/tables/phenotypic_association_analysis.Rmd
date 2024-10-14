@@ -1,11 +1,15 @@
 ---
-title: "Phenotypic Analysis"
+title: "Association between breastfeeding and outcomes"
 author: "Giulio Centorame"
 format: html
 editor: visual
 ---
 
-This notebook contains the phenotypic association analysis between breastfeeding and our outcomes of interest
+This notebook contains the phenotypic association analysis between breastfeeding and our outcomes of interest.
+
+The results of this notebook are also available in Supplementary Tables 10 to 12
+
+# Setup
 
 ```{r setup, include = FALSE}
 
