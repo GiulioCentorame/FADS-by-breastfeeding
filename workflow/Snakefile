@@ -52,22 +52,15 @@ rule all:
             ancestry_group = ancestry_group
         ),
         "results/notebooks/tables/direction_effect.html",
-        expand(
-            "results/notebooks/tables/{{ancestry_group}}/regression_coefficients.html",
-            ancestry_group = ancestry_group
-        ),
-        "results/notebooks/tables/direction_effect.html",
+        "results/notebooks/tables/regression_coefficients.html",
         # Figures
         "results/notebooks/figures/plots_main_results.html",
-        expand(
-            "results/notebooks/figures/{ancestry_group}/phenotypic_forest_plot.html",
-            ancestry_group = ancestry_group
-        ),
         expand(
             "results/notebooks/figures/{ancestry_group}/histograms.html",
             ancestry_group = ancestry_group
         ),
-        "results/notebooks/phenotypic_forest_plot.html"
+        "results/notebooks/phenotypic_forest_plot.html",
+        "results/notebooks/figures/regional_plot_FADS2.html"
 
 # Rules
 

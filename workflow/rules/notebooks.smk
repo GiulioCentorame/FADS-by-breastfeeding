@@ -36,11 +36,11 @@ rule render_direction_effect_notebook:
 rule render_regression_coefficients_notebook:
     input:
         expand(
-            f"{TEMP_DIR}/clean/{{ancestry_group}}/data_for_models.RData",,
+            f"{TEMP_DIR}/clean/{{ancestry_group}}/data_for_models.RData",
             ancestry_group = ancestry_group
         ),
     output:
-        "results/notebooks/tables/{{ancestry_group}}/regression_coefficients.html"
+        "results/notebooks/tables/regression_coefficients.html"
     envmodules:
         "r/4.2.1-foss-2022a",
         "pandoc/3.1.2"
