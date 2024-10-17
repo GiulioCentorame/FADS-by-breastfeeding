@@ -18,7 +18,7 @@ rule create_phenotypes_file:
     output:
         rds_file = f"{TEMP_DIR}/phenotypes/all_phenotypes.rds"
     envmodules:
-        "r/4.2.1-foss-2022a"
+        "r/4.4.1"
     # conda:
     #     "../envs/r.yaml"
     threads: 96
@@ -40,7 +40,7 @@ rule subset_participants_white_british:
     output:
         filtered_data = f"{TEMP_DIR}/phenotypes/white_british/subset.rds"
     envmodules:
-        "r/4.2.1-foss-2022a"
+        "r/4.4.1"
     # conda:
     #     "../envs/r.yaml"
     threads: 96
@@ -59,7 +59,7 @@ rule subset_participants_any_ancestry:
     output:
         filtered_data = f"{TEMP_DIR}/phenotypes/any_ancestry/subset.rds"
     envmodules:
-        "r/4.2.1-foss-2022a"
+        "r/4.4.1"
     # conda:
     #     "../envs/r.yaml"
     threads: 96
