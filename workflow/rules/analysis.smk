@@ -24,7 +24,7 @@ rule clean_SBP:
         disk_mb=4000,
         time_min=400
     envmodules:
-        "r/4.4.1"
+        "r/4.1.0-foss-2021a"
     script:
         "../scripts/SBP.R"
 
@@ -39,7 +39,7 @@ rule clean_DBP:
         disk_mb=4000,
         time_min=400
     envmodules:
-        "r/4.4.1"
+        "r/4.1.0-foss-2021a"
     script:
         "../scripts/DBP.R"
 
@@ -49,7 +49,7 @@ rule clean_phenotypes:
     output:
         output = f"{TEMP_DIR}/clean/{{ancestry_group}}/data_for_models.RData",
     envmodules:
-        "r/4.4.1"
+        "r/4.1.0-foss-2021a"
     script:
         "../scripts/clean_phenotypes.R"
 
@@ -62,7 +62,7 @@ rule fit_models_additive:
     resources:
         mem_mb=100000,
     envmodules:
-        "r/4.4.1"
+        "r/4.1.0-foss-2021a"
     params:
         recessive = False,
     script:
@@ -77,7 +77,7 @@ rule fit_models_recessive:
     resources:
         mem_mb=100000,
     envmodules:
-        "r/4.4.1"
+        "r/4.1.0-foss-2021a"
     params:
         recessive = True,
     script:

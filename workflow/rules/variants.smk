@@ -124,6 +124,6 @@ rule compute_rsq_matrix:
     output:
         "results/ld.tsv"
     envmodules:
-        "r/4.4.1"
+        "r/4.1.0-foss-2021a"
     script:
         "../scripts/ld.R"
