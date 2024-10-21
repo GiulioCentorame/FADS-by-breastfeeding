@@ -36,7 +36,11 @@ rule render_direction_effect_notebook:
 rule render_regression_coefficients_notebook:
     input:
         expand(
-            f"{TEMP_DIR}/clean/{{ancestry_group}}/data_for_models.RData",
+            f"{TEMP_DIR}/clean/{{ancestry_group}}/model_summaries_additive.RData",
+            ancestry_group = ancestry_group
+        ),
+        expand(
+            f"{TEMP_DIR}/clean/{{ancestry_group}}/model_summaries_recessive.RData",
             ancestry_group = ancestry_group
         ),
     output:

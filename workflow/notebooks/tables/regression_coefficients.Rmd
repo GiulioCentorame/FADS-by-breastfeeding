@@ -315,7 +315,8 @@ model_summary_interactions %>%
 ### Subgroups
 
 ```{r white-british-recessive}
-load("~/Repositories/mrxp_breastfed_cog/temp/clean/white_british/model_summaries_recessive.RData")
+base::load(snakemake@input[[3]])
+#load("~/Repositories/mrxp_breastfed_cog/temp/clean/white_british/model_summaries_recessive.RData")
 
 # Adapted from: https://gt.rstudio.com/articles/case-study-clinical-tables.html
 c("rs1535", "rs174575", "rs174583") %>%
@@ -453,8 +454,8 @@ model_summary_interactions %>%
 ### Subgroups
 
 ```{r all-ancestries-recessive}
-
-load("~/Repositories/mrxp_breastfed_cog/temp/clean/any_ancestry/model_summaries_recessive.RData")
+base::load(snakemake@input[[4]])
+#load("~/Repositories/mrxp_breastfed_cog/temp/clean/any_ancestry/model_summaries_recessive.RData")
 
 # Adapted from: https://gt.rstudio.com/articles/case-study-clinical-tables.html
 c("rs1535", "rs174575", "rs174583") %>%
