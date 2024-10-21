@@ -112,3 +112,19 @@ rule fit_models_additive_no_trimming:
         recessive = False,
     script:
         "../scripts/fit_models.R"
+
+rule fit_models_recessive_no_trimming:
+    input:
+        data = f"{TEMP_DIR}/clean/{{ancestry_group}}/data_for_models_no_trim.RData"
+    output:
+        output = f"{TEMP_DIR}/clean/{{ancestry_group}}/model_summaries_recessive_no_trim.RData"
+    threads: 96
+    resources:
+        mem_mb=100000,
+        time="04:00:00"
+    envmodules:
+        "r/4.1.0-foss-2021a"
+    params:
+        recessive = True,
+    script:
+        "../scripts/fit_models.R"
