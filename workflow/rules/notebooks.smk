@@ -88,7 +88,7 @@ rule render_regional_plot:
     script:
         "../notebooks/figures/regional_plot_FADS2.Rmd"
 
-rule render_regression_coefficients_notebook:
+rule render_regression_coefficients_notebook_no_trim:
     input:
         expand(
             f"{TEMP_DIR}/clean/{{ancestry_group}}/model_summaries_additive_no_trim.RData",
