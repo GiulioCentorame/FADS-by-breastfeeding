@@ -82,3 +82,30 @@ rule fit_models_recessive:
         recessive = True,
     script:
         "../scripts/fit_models.R"
+
+# Main analysis without trimming
+
+rule clean_phenotypes_no_trim:
+    input:
+        data = f"{TEMP_DIR}/merged/{{ancestry_group}}/data.rds"
+    output:
+        output = f"{TEMP_DIR}/clean/{{ancestry_group}}/data_for_models_no_trim.RData",
+    envmodules:
+        "r/4.1.0-foss-2021a"
+    script:
+        "../scripts/clean_phenotypes_no_trim.R"
+
+rule fit_models_additive_no_trimming:
+    input:
+        data = f"{TEMP_DIR}/clean/{{ancestry_group}}/data_for_models_no_trim.RData"
+    output:
+        output = f"{TEMP_DIR}/clean/{{ancestry_group}}/model_summaries_additive_no_trim.RData"
+    threads: 96
+    resources:
+        mem_mb=100000,
+    envmodules:
+        "r/4.1.0-foss-2021a"
+    params:
+        recessive = False,
+    script:
+        "../scripts/fit_models.R"

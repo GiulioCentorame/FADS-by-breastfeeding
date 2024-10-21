@@ -51,21 +51,6 @@ rule render_regression_coefficients_notebook:
     script:
         "../notebooks/tables/regression_coefficients.Rmd"
 
-## Rule to render notebooks for figures
-
-rule render_phenotypic_analyses_plots:
-    input:
-        f"{TEMP_DIR}/clean/white_british/data_for_models.RData",
-    output:
-        "results/notebooks/figures/phenotypic_forest_plot.html"
-    envmodules:
-        "r/4.1.0-foss-2021a",
-        "pandoc/3.1.2"
-    resources:
-        mem_mb = 50000
-    script:
-        "../notebooks/figures/phenotypic_forest_plot.Rmd"
-
 rule render_paper_plots:
     input:
        f"{TEMP_DIR}/clean/white_british/model_summaries_additive.RData",
@@ -102,3 +87,21 @@ rule render_regional_plot:
         "pandoc/3.1.2"
     script:
         "../notebooks/figures/regional_plot_FADS2.Rmd"
+
+rule render_regression_coefficients_notebook:
+    input:
+        expand(
+            f"{TEMP_DIR}/clean/{{ancestry_group}}/model_summaries_additive_no_trim.RData",
+            ancestry_group = ancestry_group
+        ),
+        expand(
+            f"{TEMP_DIR}/clean/{{ancestry_group}}/model_summaries_recessive_no_trim.RData",
+            ancestry_group = ancestry_group
+        ),
+    output:
+        "results/notebooks/tables/regression_coefficients_no_trim.html"
+    envmodules:
+        "r/4.1.0-foss-2021a",
+        "pandoc/3.1.2"
+    script:
+        "../notebooks/tables/regression_coefficients.Rmd"

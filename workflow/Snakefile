@@ -60,7 +60,8 @@ rule all:
             ancestry_group = ancestry_group
         ),
         "results/notebooks/phenotypic_forest_plot.html",
-        "results/notebooks/figures/regional_plot_FADS2.html"
+        "results/notebooks/figures/regional_plot_FADS2.html",
+        "results/notebooks/tables/regression_coefficients_no_trim.html"
 
 # Rules
 
