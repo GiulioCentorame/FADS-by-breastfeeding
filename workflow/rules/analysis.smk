@@ -105,7 +105,7 @@ rule fit_models_additive_no_trimming:
     threads: 96
     resources:
         mem_mb=100000,
-        time="04:00:00"
+        time="06:00:00"
     envmodules:
         "r/4.1.0-foss-2021a"
     params:
@@ -121,7 +121,7 @@ rule fit_models_recessive_no_trimming:
     threads: 96
     resources:
         mem_mb=100000,
-        time="04:00:00"
+        time="06:00:00"
     envmodules:
         "r/4.1.0-foss-2021a"
     params:
