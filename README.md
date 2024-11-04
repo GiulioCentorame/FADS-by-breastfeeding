@@ -5,11 +5,12 @@ Snakemake workflow for analysis and plots for the manuscript on the gene-by-envi
 ## Requirements
 
 This workflow assumes the following software is installed and available:
-- snakemake 7.x
-- ldbird
-- plink 2.0
-- SQLite 3.42
-- pandoc
+- `snakemake 7.x`
+- `ldbird`
+- `plink 2.0`
+- `SQLite 3.42`
+- `pandoc`
+- `renv` (optional)
 
 Environment modules are provided for most software when running on UQ's HPC Bunya.
 
@@ -17,4 +18,5 @@ Environment modules are provided for most software when running on UQ's HPC Buny
 
 - Clone the repository
 - Set the paths within `config/config.yaml`
-- Run the workflow using `snakemake --use-envmodules --use-conda`
+- (If not running using `conda` environments) restore installed packages in R using `renv::restore()`
+- Run the workflow
