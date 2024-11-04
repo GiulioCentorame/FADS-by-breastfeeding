@@ -8,6 +8,8 @@ rule render_descriptive_analysis:
     envmodules:
         "r/4.1.0-foss-2021a",
         "pandoc/3.1.2"
+    conda:
+        "../envs/notebooks.yaml"
     script:
         "../notebooks/tables/descriptives.Rmd"
 
@@ -19,6 +21,8 @@ rule render_phenotypic_associations:
     envmodules:
         "r/4.1.0-foss-2021a",
         "pandoc/3.1.2"
+    conda:
+        "../envs/notebooks.yaml"
     resources:
         mem_mb=50000
     script:
@@ -30,6 +34,8 @@ rule render_direction_effect_notebook:
     envmodules:
         "r/4.1.0-foss-2021a",
         "pandoc/3.1.2"
+    conda:
+        "../envs/notebooks.yaml"
     script:
         "../notebooks/tables/direction_effect.Rmd"
 
@@ -48,6 +54,8 @@ rule render_regression_coefficients_notebook:
     envmodules:
         "r/4.1.0-foss-2021a",
         "pandoc/3.1.2"
+    conda:
+        "../envs/notebooks.yaml"
     script:
         "../notebooks/tables/regression_coefficients.Rmd"
 
@@ -61,6 +69,8 @@ rule render_paper_plots:
     envmodules:
         "r/4.1.0-foss-2021a",
         "pandoc/3.1.2"
+    conda:
+        "../envs/notebooks.yaml"
     script:
         "../notebooks/figures/plots_main_results.Rmd"
 
@@ -72,6 +82,8 @@ rule render_histogram_plots:
     envmodules:
         "r/4.1.0-foss-2021a",
         "pandoc/3.1.2"
+    conda:
+        "../envs/notebooks.yaml"
     script:
         "../notebooks/figures/histograms.Rmd"
 
@@ -85,6 +97,8 @@ rule render_regional_plot:
     envmodules:
         "r/4.1.0-foss-2021a",
         "pandoc/3.1.2"
+    conda:
+        "../envs/notebooks.yaml"
     script:
         "../notebooks/figures/regional_plot_FADS2.Rmd"
 
@@ -103,5 +117,7 @@ rule render_regression_coefficients_notebook_no_trim:
     envmodules:
         "r/4.1.0-foss-2021a",
         "pandoc/3.1.2"
+    conda:
+        "../envs/notebooks.yaml"
     script:
         "../notebooks/tables/regression_coefficients.Rmd"

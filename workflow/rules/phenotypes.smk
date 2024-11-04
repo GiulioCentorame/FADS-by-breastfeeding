@@ -19,8 +19,8 @@ rule create_phenotypes_file:
         rds_file = f"{TEMP_DIR}/phenotypes/all_phenotypes.rds"
     envmodules:
         "r/4.1.0-foss-2021a"
-    # conda:
-    #     "../envs/r.yaml"
+    conda:
+        "../envs/default-r.yaml"
     threads: 96
     resources:
         mem_mb=1000000,
@@ -41,8 +41,8 @@ rule subset_participants_white_british:
         filtered_data = f"{TEMP_DIR}/phenotypes/white_british/subset.rds"
     envmodules:
         "r/4.1.0-foss-2021a"
-    # conda:
-    #     "../envs/r.yaml"
+    conda:
+        "../envs/default-r.yaml"
     threads: 96
     resources:
         mem_mb=500000
@@ -60,8 +60,8 @@ rule subset_participants_any_ancestry:
         filtered_data = f"{TEMP_DIR}/phenotypes/any_ancestry/subset.rds"
     envmodules:
         "r/4.1.0-foss-2021a"
-    # conda:
-    #     "../envs/r.yaml"
+    conda:
+        "../envs/default-r.yaml"
     threads: 96
     resources:
         mem_mb=500000
