@@ -1,0 +1,76 @@
+# Main entrypoint of the workflow. 
+# Please follow the best practices: 
+# https://snakemake.readthedocs.io/en/stable/snakefiles/best_practices.html,
+# in particular regarding the standardized folder structure mentioned there. 
+import os
+import os.path as op
+import sys
+from snakemake.utils import min_version
+min_version("7.0")
+
+# Obtain real path for Snakefile
+SDIR = os.path.realpath(os.path.dirname(srcdir("Snakefile")))
+# Run everything in safe mode: http://redsymbol.net/articles/unofficial-bash-strict-mode/
+# -x just prints out the commands that you just ran
+shell.prefix(f"set -euxo pipefail; IFS=$'\n\t'")
+
+# Save report on the workflow execution
+report: "report/workflow.rst"
+
+configfile: "config/config.yaml"
+
+# Define temp directory
+TEMP_DIR = config.pop("tempdir", "temp")
+if TEMP_DIR != "temp":
+    if os.path.exists("temp"):
+        if os.path.islink("temp") and os.path.realpath("temp") == os.path.realpath(
+            TEMP_DIR
+        ):
+            print("The temp dir has already been linked.")
+        else:
+            sys.exit("temp/ already in use, please move it before running.")
+    else:
+        shell("ln -s {TEMP_DIR} temp")
+
+# Ancestral groups
+ancestry_group = ["white_british", "any_ancestry"]
+
+# Targets for the workflow
+rule all:
+    input:
+        # SNP-based summary statistics
+        f"{TEMP_DIR}/variants/variants.snp-stats",
+        # Linkage disequilibrium structure between variants
+        "results/ld.tsv",
+        # Tables
+        expand(
+            "results/notebooks/tables/{ancestry_group}/descriptives.html",
+            ancestry_group = ancestry_group
+        ),
+        expand(
+            "results/notebooks/tables/{ancestry_group}/phenotypic_analysis.html",
+            ancestry_group = ancestry_group
+        ),
+        "results/notebooks/tables/direction_effect.html",
+        "results/notebooks/tables/regression_coefficients.html",
+        # Figures
+        "results/notebooks/figures/plots_main_results.html",
+        expand(
+            "results/notebooks/figures/{ancestry_group}/histograms.html",
+            ancestry_group = ancestry_group
+        ),
+        "results/notebooks/phenotypic_forest_plot.html",
+        "results/notebooks/figures/regional_plot_FADS2.html",
+        "results/notebooks/tables/regression_coefficients_no_trim.html"
+
+# Rules
+
+include: "rules/resources.smk"
+
+include: "rules/phenotypes.smk"
+
+include: "rules/variants.smk"
+
+include: "rules/analysis.smk"
+
+include: "rules/notebooks.smk"

@@ -1,0 +1,359 @@
+---
+title: "Association between breastfeeding and outcomes"
+author: "Giulio Centorame"
+format: html
+editor: visual
+---
+
+This notebook contains the phenotypic association analysis between breastfeeding and our outcomes of interest.
+
+The results of this notebook are also available in Supplementary Tables 10 to 12
+
+# Setup
+
+```{r setup, include = FALSE}
+
+library(dplyr)
+library(purrr)
+library(tidyr)
+library(gtsummary)
+library(modelsummary)
+
+# Load data in
+base::load(snakemake@input[[1]])
+#base::load("../../temp/clean/white_british/data_for_models.RData")
+
+descriptive_data <-
+  # Round dosage to allelic count
+  descriptive_data %>%
+  mutate(
+    # Switch to implicit NAs 
+    breastfed_as_a_baby = na_if(breastfed_as_a_baby, "Missing"),
+    breastfed_as_a_baby = recode(
+      breastfed_as_a_baby,
+      Yes = 1,
+      No = 0
+      ),
+    sex = recode(sex, Female = 0, Male = 1)
+    ) %>%
+  mutate(
+    yob = scale(year_of_birth_f34_0_0),
+    tdi = scale(townsend_deprivation_index_at_recruitment_f189_0_0)
+    )
+
+rename_list <- function(.data, ...) {
+    mapping <- sapply(
+        rlang::enquos(...),
+        rlang::as_name
+    )
+    new_names = setNames(nm=names(.data))
+    # `new_name = old_name` for consistency with `dplyr::rename`
+    new_names[mapping] = names(mapping)
+    # for `old_name = new_name` use: `new_names[names(mapping)] = mapping`
+    setNames(.data, new_names)
+}
+
+# Create character vector for formula
+formula_bf <-
+  function(outcome, delivery = FALSE){
+    
+    basic_formula <- paste(outcome, "~ breastfed_as_a_baby")
+    
+    if(delivery){
+      
+      return(paste(basic_formula, "+ delivery"))  
+      
+    } else {
+      
+      return(basic_formula)
+    }
+  }
+
+formula_bf_age_sex <-
+  function(outcome, delivery = FALSE){
+    paste(formula_bf(outcome = outcome, delivery = delivery), "+ age + sex")
+  }
+
+formula_bf_age_sex_tdi <-
+  function(outcome, delivery = FALSE){
+    paste0(formula_bf_age_sex(outcome = outcome, delivery = delivery), "+ tdi")
+  }
+
+formula_bf_age_sex_tdi_pcs <-
+  function(outcome, delivery = FALSE){
+    paste(formula_bf_age_sex_tdi(outcome = outcome, delivery = delivery), 
+          paste("+", paste0("PC", 1:40), collapse = " + "))
+  }
+
+# Add descriptive stats to data
+
+list_continuous_single_delivery_first_instance_breastfeeding <-
+  list_continuous_single_delivery_first_instance_breastfeeding %>%
+  map(\(x) inner_join(x, descriptive_data, by = "eid")) %>%
+  map(\(x) mutate(x, age = age_zscores))
+
+list_continuous_multiple_delivery_first_instance_breastfeeding <-
+  within(list_continuous_multiple_delivery_first_instance_breastfeeding, rm(pairs_matching_incorrect_matches))
+
+list_continuous_multiple_delivery_first_instance_breastfeeding <-
+  list_continuous_multiple_delivery_first_instance_breastfeeding %>%
+  map(\(x) inner_join(x, descriptive_data, by = "eid")) %>%
+  map(\(x) mutate(x, age = age_zscores))
+
+list_binary_first_instance_breastfeeding <-
+  list_binary_first_instance_breastfeeding %>%
+  map(\(x) inner_join(x, descriptive_data, by = "eid")) %>% 
+  within(., rm(prospective_memory_binary)) %>%
+  map(\(x) mutate(x, age = age_zscores))
+
+rm(common_data, descriptive_data)
+```
+
+# Variable coding
+
+-   Breastfeeding is coded as 0 = bottlefed, 1 = breastfed
+
+-   Sex is coded as 0 = Female, 1 = Male
+
+-   Delivery is coded as Assessment centre = 0, Online = 1
+
+# Association with breastfeeding
+
+## Continuous traits
+
+```{r continuous-single-delivery, echo = FALSE}
+
+cont_sd_unadj <-
+ list_continuous_single_delivery_first_instance_breastfeeding %>%
+  imap(
+    \(data, trait)
+      lm(formula(formula_bf(trait)), data = data)
+       )
+
+cont_sd_age_sex <-
+ list_continuous_single_delivery_first_instance_breastfeeding %>%
+  imap(
+    \(data, trait)
+      lm(formula(formula_bf_age_sex(trait)), data = data)
+       )
+
+cont_sd_age_sex_tdi <-
+ list_continuous_single_delivery_first_instance_breastfeeding %>%
+  imap(
+    \(data, trait)
+      lm(formula(formula_bf_age_sex_tdi(trait)), data = data)
+       )
+
+cont_sd_age_sex_tdi_pcs <-
+ list_continuous_single_delivery_first_instance_breastfeeding %>%
+  imap(
+    \(data, trait)
+      lm(formula(formula_bf_age_sex_tdi_pcs(trait)), data = data)
+       )
+
+# Remove unused object to save some memory
+
+rm(list_continuous_single_delivery_first_instance_breastfeeding)
+
+list(cont_sd_unadj, 
+     cont_sd_age_sex, 
+     cont_sd_age_sex_tdi, 
+     cont_sd_age_sex_tdi_pcs) %>%
+  map(
+    \(x)
+    rename_list(
+      x,
+     "Years of schooling" = years_of_schooling,
+     "Number of offspring" = number_of_offspring,
+     "Total cholesterol" = total_cholesterol,
+     "LDL cholesterol" = ldl_direct,
+     "HDL cholesterol" = hdl_direct,
+     "Triglycerides" = triglycerides,
+     "Body mass index" = bmi,
+     "Systolic blood pressure" = sbp,
+     "Diastolic blood pressure" = dbp,
+     "Matrix pattern completion" = correct_answers_matrix_completion,
+     "Reaction time" = reaction_time_ms,
+     "Tower rearranging" = tower_rearranging_correct_answers,
+     "Paired associate learning" =  paired_associate_learning_correct_word_pairs
+     )
+    ) %>%
+  pmap(
+  \(unadj, agesex, tdi, pcs) {
+    list(
+      "Unadjusted" = unadj,
+      "Adjusted for age and sex" = agesex,
+      "Adjusted for age, sex and TDI" = tdi,
+      "Adjusted for age, sex, TDI, and PCs" = pcs
+      )
+}) %>%
+  modelsummary(
+    shape = "rbind",
+        statistic = 'conf.int',
+        coef_rename = c("age" = "Age",
+                        "sex" = "Sex",
+                        "breastfed_as_a_baby" = "Breastfed as a baby",
+                        "tdi" = "Townsend deprivation index",
+                        "deliveryOnline" = "Delivery mode"))
+
+# Free some more memory
+rm(cont_sd_unadj, 
+   cont_sd_age_sex, 
+   cont_sd_age_sex_tdi, 
+   cont_sd_age_sex_tdi_pcs)
+```
+
+## Cognitive traits with multiple delivery mode
+
+```{r continuous-multiple-delivery, echo = FALSE}
+
+cont_md_unadj <-
+ list_continuous_multiple_delivery_first_instance_breastfeeding %>%
+  imap(
+    \(data, trait)
+      lm(formula(formula_bf(trait, delivery = TRUE)), data = data)
+       )
+
+cont_md_age_sex <-
+ list_continuous_multiple_delivery_first_instance_breastfeeding %>%
+  imap(
+    \(data, trait)
+      lm(formula(formula_bf_age_sex(trait, delivery = TRUE)), data = data)
+       )
+
+cont_md_age_sex_tdi <-
+ list_continuous_multiple_delivery_first_instance_breastfeeding %>%
+  imap(
+    \(data, trait)
+      lm(formula(formula_bf_age_sex_tdi(trait, delivery = TRUE)), data = data)
+       )
+
+cont_md_age_sex_tdi_pcs <-
+ list_continuous_multiple_delivery_first_instance_breastfeeding %>%
+  imap(
+    \(data, trait)
+      lm(formula(formula_bf_age_sex_tdi_pcs(trait, delivery = TRUE)), data = data)
+       )
+
+# Free some memory
+
+rm(list_continuous_multiple_delivery_first_instance_breastfeeding)
+
+list(cont_md_unadj,
+     cont_md_age_sex, 
+     cont_md_age_sex_tdi,
+     cont_md_age_sex_tdi_pcs) %>%
+  map(
+    \(x)
+    rename_list(
+      x,
+      "Fluid intelligence" = fluid_intelligence,
+      "Numeric memory" = numeric_memory_max_digits,
+      "Symbol digit substitution" = symbol_digit_substitution_correct_answers,
+      "Trailmaking path A" = trailmaking_path_1,
+      "Trailmaking path B" = trailmaking_path_2,
+      "Trailmaking path B-A" = trailmaking_2_minus_1
+     )
+    ) %>%
+  pmap(
+  \(unadj, agesex, tdi, pcs) {
+    list(
+      "Unadjusted" = unadj,
+      "Adjusted for age and sex" = agesex,
+      "Adjusted for age, sex and TDI" = tdi,
+      "Adjusted for age, sex, TDI, and PCs" = pcs
+      )
+}) %>%
+  modelsummary(
+    shape = "rbind",
+        statistic = 'conf.int',
+        coef_rename = c("age" = "Age",
+                        "sex" = "Sex",
+                        "breastfed_as_a_baby" = "Breastfed as a baby",
+                        "tdi" = "Townsend deprivation index",
+                        "deliveryOnline" = "Delivery mode"))
+
+# Free even more memory
+
+rm(cont_md_unadj,
+   cont_md_age_sex, 
+   cont_md_age_sex_tdi,
+   cont_md_age_sex_tdi_pcs)
+```
+
+## Binary traits
+
+```{r binary-traits, echo = FALSE}
+
+bin_unadj <-
+ list_binary_first_instance_breastfeeding %>%
+  imap(
+    \(data, trait)
+      glm(formula(formula_bf(trait)), data = data, family=binomial(link="logit"))
+       )
+
+bin_age_sex <-
+ list_binary_first_instance_breastfeeding %>%
+  imap(
+    \(data, trait)
+      glm(formula(formula_bf_age_sex(trait)), data = data, family=binomial(link="logit"))
+       )
+
+bin_age_sex_tdi <-
+ list_binary_first_instance_breastfeeding %>%
+  imap(
+    \(data, trait)
+      glm(formula(formula_bf_age_sex_tdi(trait)), data = data, family=binomial(link="logit"))
+       )
+
+bin_age_sex_tdi_pcs <-
+ list_binary_first_instance_breastfeeding %>%
+  imap(
+    \(data, trait)
+      glm(formula(formula_bf_age_sex_tdi_pcs(trait)), data = data, family=binomial(link="logit"))
+       )
+
+# Free some memory
+
+rm(list_binary_first_instance_breastfeeding)
+
+list(bin_unadj,
+     bin_age_sex,
+     bin_age_sex_tdi,
+     bin_age_sex_tdi_pcs) %>%
+  map(
+    \(x)
+    rename_list(
+      x,
+      "Angina" = angina,
+      "Heart attack" = heart_attack,
+      "Stroke" = stroke,
+      "Type-II Diabetes" = type2_diabetes,
+      "Hayfever, rhinitis, or eczema" = hayfever_rhinitis_eczema
+      )
+    ) %>%
+  pmap(
+  \(unadj, agesex, tdi, pcs) {
+    list(
+      "Unadjusted" = unadj,
+      "Adjusted for age and sex" = agesex,
+      "Adjusted for age, sex and TDI" = tdi,
+      "Adjusted for age, sex, TDI, and PCs" = pcs
+      )
+}) %>%
+  modelsummary(
+    shape = "rbind",
+        statistic = 'conf.int',
+        coef_rename = c("age" = "Age",
+                        "sex" = "Sex",
+                        "breastfed_as_a_baby" = "Breastfed as a baby",
+                        "tdi" = "Townsend deprivation index",
+                        "delivery" = "Delivery mode"))
+
+# Free some more memory
+
+rm(bin_unadj,
+   bin_age_sex,
+   bin_age_sex_tdi,
+   bin_age_sex_tdi_pcs)
+```

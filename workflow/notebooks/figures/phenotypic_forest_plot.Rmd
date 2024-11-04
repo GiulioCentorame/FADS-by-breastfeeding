@@ -1,0 +1,503 @@
+---
+title: "Phenotypic Analysis"
+author: "Giulio Centorame"
+format: html
+editor: visual
+---
+
+This notebook contains the phenotypic association analysis between breastfeeding and our outcomes of interest
+
+```{r setup, include = FALSE}
+
+library(dplyr)
+library(purrr)
+library(tidyr)
+library(gtsummary)
+library(modelsummary)
+library(broom)
+library(ggplot2)
+library(patchwork)
+
+# Load data in
+base::load(snakemake@input[[1]])
+#base::load("../../temp/clean/white_british/data_for_models.RData")
+
+descriptive_data <-
+  # Round dosage to allelic count
+  descriptive_data %>%
+  mutate(
+    # Switch to implicit NAs 
+    breastfed_as_a_baby = na_if(breastfed_as_a_baby, "Missing"),
+    breastfed_as_a_baby = recode(
+      breastfed_as_a_baby,
+      Yes = 1,
+      No = 0
+      ),
+    sex = recode(sex, Female = 0, Male = 1)
+    ) %>%
+  rename(yob = year_of_birth_f34_0_0,
+         tdi = townsend_deprivation_index_at_recruitment_f189_0_0)
+
+rename_list <- function(.data, ...) {
+    mapping <- sapply(
+        rlang::enquos(...),
+        rlang::as_name
+    )
+    new_names = setNames(nm=names(.data))
+    # `new_name = old_name` for consistency with `dplyr::rename`
+    new_names[mapping] = names(mapping)
+    # for `old_name = new_name` use: `new_names[names(mapping)] = mapping`
+    setNames(.data, new_names)
+}
+
+# Create character vector for formula
+formula_bf <-
+  function(outcome, delivery = FALSE){
+    
+    basic_formula <- paste(outcome, "~ breastfed_as_a_baby")
+    
+    if(delivery){
+      
+      return(paste(basic_formula, "+ delivery"))  
+      
+    } else {
+      
+      return(basic_formula)
+    }
+  }
+
+formula_bf_age_sex <-
+  function(outcome, delivery = FALSE){
+    paste(formula_bf(outcome = outcome, delivery = delivery), "+ age + sex")
+  }
+
+formula_bf_age_sex_tdi <-
+  function(outcome, delivery = FALSE){
+    paste0(formula_bf_age_sex(outcome = outcome, delivery = delivery), "+ tdi")
+  }
+
+formula_bf_age_sex_tdi_pcs <-
+  function(outcome, delivery = FALSE){
+    paste(formula_bf_age_sex_tdi(outcome = outcome, delivery = delivery), 
+          paste("+", paste0("PC", 1:40), collapse = " + "))
+  }
+
+# Add descriptive stats to data
+
+list_continuous_single_delivery_first_instance_breastfeeding <-
+  list_continuous_single_delivery_first_instance_breastfeeding %>%
+  map(\(x) inner_join(x, descriptive_data, by = "eid"))
+
+list_continuous_multiple_delivery_first_instance_breastfeeding <-
+  within(list_continuous_multiple_delivery_first_instance_breastfeeding, rm(pairs_matching_incorrect_matches))
+
+list_continuous_multiple_delivery_first_instance_breastfeeding <-
+  list_continuous_multiple_delivery_first_instance_breastfeeding %>%
+  map(\(x) inner_join(x, descriptive_data, by = "eid"))
+
+list_binary_first_instance_breastfeeding <-
+  list_binary_first_instance_breastfeeding %>%
+  map(\(x) inner_join(x, descriptive_data, by = "eid")) %>% 
+  within(., rm(prospective_memory_binary))
+
+rm(common_data, descriptive_data)
+
+# Variables for all plots
+
+quantitative_range <- c(-0.125, 0.18)
+```
+
+# Variable coding
+
+-   Breastfeeding is coded as 0 = bottlefed, 1 = breastfed
+
+-   Sex is coded as 0 = Female, 1 = Male
+
+-   Delivery is coded as Assessment centre = 0, Online = 1
+
+# Association with breastfeeding
+
+## Continuous traits
+
+```{r continuous-single-delivery, echo = FALSE}
+
+cont_sd_unadj <-
+ list_continuous_single_delivery_first_instance_breastfeeding %>%
+  imap(
+    \(data, trait)
+      lm(formula(formula_bf(trait)), data = data)
+       ) %>%
+map(\(x) modelplot(x, draw = FALSE))
+
+cont_sd_age_sex <-
+ list_continuous_single_delivery_first_instance_breastfeeding %>%
+  imap(
+    \(data, trait)
+      lm(formula(formula_bf_age_sex(trait)), data = data)
+       ) %>%
+map(\(x) modelplot(x, draw = FALSE))
+
+cont_sd_age_sex_tdi <-
+ list_continuous_single_delivery_first_instance_breastfeeding %>%
+  imap(
+    \(data, trait)
+      lm(formula(formula_bf_age_sex_tdi(trait)), data = data)
+       ) %>%
+map(\(x) modelplot(x, draw = FALSE))
+
+cont_sd_age_sex_tdi_pcs <-
+ list_continuous_single_delivery_first_instance_breastfeeding %>%
+  imap(
+    \(data, trait)
+      lm(formula(formula_bf_age_sex_tdi_pcs(trait)), data = data)
+       ) %>%
+map(\(x) modelplot(x, draw = FALSE))
+
+# Remove unused object to save some memory
+
+rm(list_continuous_single_delivery_first_instance_breastfeeding)
+
+table_cont_sd <-
+  list(cont_sd_unadj, 
+     cont_sd_age_sex, 
+     cont_sd_age_sex_tdi, 
+     cont_sd_age_sex_tdi_pcs) %>%
+  map(
+    \(x)
+    rename_list(
+      x,
+     "Years in full-time education" = years_of_schooling,
+     "Number of offspring" = number_of_offspring,
+     "Total cholesterol" = total_cholesterol,
+     "LDL direct measurement" = ldl_direct,
+     "HDL direct measurement" = hdl_direct,
+     "Triglycerides" = triglycerides,
+     "Body mass index" = bmi,
+     "Systolic blood pressure" = sbp,
+     "Diastolic blood pressure" = dbp,
+     "Matrix pattern completion" = correct_answers_matrix_completion,
+     "Reaction time" = reaction_time_ms,
+     "Tower rearranging" = tower_rearranging_correct_answers ,
+     "Paired associate learning" =  paired_associate_learning_correct_word_pairs
+     )
+    ) %>%
+  pmap(
+  \(unadj, agesex, tdi, pcs) {
+    list(
+      "Unadjusted" = unadj,
+      "Adjusted for age and sex" = agesex,
+      "Adjusted for age, sex and TDI" = tdi,
+      "Adjusted for age, sex, TDI, and PCs" = pcs
+      )
+}) %>%
+  map(\(x) bind_rows(x, .id = "model")) %>%
+  bind_rows(.id = "trait")
+
+# Free some more memory
+rm(cont_sd_unadj, 
+   cont_sd_age_sex, 
+   cont_sd_age_sex_tdi, 
+   cont_sd_age_sex_tdi_pcs)
+```
+
+## Cognitive traits with multiple delivery mode
+
+```{r continuous-multiple-delivery, echo = FALSE}
+
+cont_md_unadj <-
+ list_continuous_multiple_delivery_first_instance_breastfeeding %>%
+  imap(
+    \(data, trait)
+      lm(formula(formula_bf(trait, delivery = TRUE)), data = data)
+       ) %>%
+map(\(x) modelplot(x, draw = FALSE))
+
+cont_md_age_sex <-
+ list_continuous_multiple_delivery_first_instance_breastfeeding %>%
+  imap(
+    \(data, trait)
+      lm(formula(formula_bf_age_sex(trait, delivery = TRUE)), data = data)
+       ) %>%
+map(\(x) modelplot(x, draw = FALSE))
+
+cont_md_age_sex_tdi <-
+ list_continuous_multiple_delivery_first_instance_breastfeeding %>%
+  imap(
+    \(data, trait)
+      lm(formula(formula_bf_age_sex_tdi(trait, delivery = TRUE)), data = data)
+       ) %>%
+map(\(x) modelplot(x, draw = FALSE))
+
+cont_md_age_sex_tdi_pcs <-
+ list_continuous_multiple_delivery_first_instance_breastfeeding %>%
+  imap(
+    \(data, trait)
+      lm(formula(formula_bf_age_sex_tdi_pcs(trait, delivery = TRUE)), data = data)
+       ) %>%
+map(\(x) modelplot(x, draw = FALSE))
+
+# Free some memory
+
+rm(list_continuous_multiple_delivery_first_instance_breastfeeding)
+
+table_cont_md <-
+  list(cont_md_unadj,
+     cont_md_age_sex, 
+     cont_md_age_sex_tdi,
+     cont_md_age_sex_tdi_pcs) %>%
+  map(
+    \(x)
+    rename_list(
+      x,
+       "Verbal-numerical reasoning" = fluid_intelligence,
+  "Numeric memory" = numeric_memory_max_digits,
+  "Symbol digit substitution" = symbol_digit_substitution_correct_answers,
+  "Trailmaking path A" = trailmaking_path_1,
+  "Trailmaking path B" = trailmaking_path_2,
+  "Trailmaking path B-A" = trailmaking_2_minus_1
+     )
+    ) %>%
+  pmap(
+  \(unadj, agesex, tdi, pcs) {
+    list(
+      "Unadjusted" = unadj,
+      "Adjusted for age and sex" = agesex,
+      "Adjusted for age, sex and TDI" = tdi,
+      "Adjusted for age, sex, TDI, and PCs" = pcs
+      )
+})  %>%
+  map(\(x) bind_rows(x, .id = "model")) %>%
+  bind_rows(.id = "trait")
+
+# Free even more memory
+
+rm(cont_md_unadj,
+   cont_md_age_sex, 
+   cont_md_age_sex_tdi,
+   cont_md_age_sex_tdi_pcs)
+```
+
+## Binary traits
+
+```{r binary-traits, echo = FALSE}
+
+bin_unadj <-
+ list_binary_first_instance_breastfeeding %>%
+  imap(
+    \(data, trait)
+      glm(formula(formula_bf(trait)), data = data, family=binomial(link="logit"))
+       ) %>%
+map(\(x) modelplot(x, draw = FALSE))
+
+bin_age_sex <-
+ list_binary_first_instance_breastfeeding %>%
+  imap(
+    \(data, trait)
+      glm(formula(formula_bf_age_sex(trait)), data = data, family=binomial(link="logit"))
+       ) %>%
+map(\(x) modelplot(x, draw = FALSE))
+
+bin_age_sex_tdi <-
+ list_binary_first_instance_breastfeeding %>%
+  imap(
+    \(data, trait)
+      glm(formula(formula_bf_age_sex_tdi(trait)), data = data, family=binomial(link="logit"))
+       ) %>%
+map(\(x) modelplot(x, draw = FALSE))
+
+bin_age_sex_tdi_pcs <-
+ list_binary_first_instance_breastfeeding %>%
+  imap(
+    \(data, trait)
+      glm(formula(formula_bf_age_sex_tdi_pcs(trait)), data = data, family=binomial(link="logit"))
+       ) %>%
+map(\(x) modelplot(x, draw = FALSE))
+
+# Free some memory
+
+rm(list_binary_first_instance_breastfeeding)
+
+table_bin <-
+  list(bin_unadj,
+     bin_age_sex,
+     bin_age_sex_tdi,
+     bin_age_sex_tdi_pcs) %>%
+  map(
+    \(x)
+    rename_list(
+      x,
+      "Angina pectoris" = angina,
+    "Myocardial infarction" = heart_attack,
+    "Stroke" = stroke,
+    "Type-II diabetes" = type2_diabetes,
+    "Hayfever, rhinitis, or eczema" = hayfever_rhinitis_eczema
+     )
+    ) %>%
+  pmap(
+  \(unadj, agesex, tdi, pcs) {
+    list(
+      "Unadjusted" = unadj,
+      "Adjusted for age and sex" = agesex,
+      "Adjusted for age, sex and TDI" = tdi,
+      "Adjusted for age, sex, TDI, and PCs" = pcs
+      )
+})  %>%
+  map(\(x) bind_rows(x, .id = "model")) %>%
+  bind_rows(.id = "trait")
+
+# Free some more memory
+
+rm(bin_unadj,
+   bin_age_sex,
+   bin_age_sex_tdi,
+   bin_age_sex_tdi_pcs)
+```
+
+# Plots
+
+```{r plots-cognitive, echo = FALSE}
+
+cognitive_measures <-
+    c(
+    "Verbal-numerical reasoning",
+    "Matrix pattern completion",
+    "Reaction time",
+    "Tower rearranging",
+    "Numeric memory",
+    "Visual memory",
+    "Paired associate learning",
+    "Symbol digit substitution",
+    "Trailmaking path A",
+    "Trailmaking path B",
+    "Trailmaking path B-A"
+    )
+
+continuous_traits <- 
+  c(
+  "Body mass index",
+  "Total cholesterol",
+  "LDL direct measurement",
+  "HDL direct measurement",
+  "Triglycerides",
+  "Systolic blood pressure",
+  "Diastolic blood pressure",
+  "Years in full-time education",
+  "Number of offspring"
+)
+
+binary_traits <- c(
+    "Angina pectoris",
+    "Myocardial infarction",
+    "Stroke",
+    "Hayfever, rhinitis, or eczema",
+    "Type-II diabetes"
+)
+
+cognitive_forestplot <- 
+bind_rows(table_cont_md, table_cont_sd) %>%
+  filter(trait %in% cognitive_measures,
+         term == "breastfed_as_a_baby",
+         model == "Adjusted for age, sex and TDI") %>%
+  ggplot(aes(x = estimate, y = trait)) +
+  geom_pointrange(aes(group = trait, 
+                     xmin = estimate - 1.96*std.error,
+                     xmax = estimate + 1.96*std.error),
+                    position = position_dodge2(width = 0.8),
+                    fatten = 0,
+                  shape = 3
+                     ) +
+  #facet_grid(~variant) +
+  theme_bw() +
+    ggsci::scale_colour_npg()+
+  scale_x_continuous(limits = quantitative_range)+
+  labs(#title = "SNP effect estimate by breastfeeding status",
+       #subtitle = "Error bars represent 95% confidence intervals",
+       x = "Regression coefficient (z-scores)",
+       y = ""
+       ) +
+  theme(axis.text.x = element_text(size = 8, 
+                                   angle = 45, 
+                                   hjust=1
+                                   ),
+        axis.text.y = element_text(size = 10)
+        #legend.position = "bottom",
+        #plot.margin = margin(10,10,10,50
+        )+
+  geom_vline(xintercept = 0, linetype = "dashed", colour = "darkgrey")
+
+cognitive_forestplot
+```
+
+```{r plots-continuous, echo = FALSE}
+continuous_forestplot <- 
+bind_rows(table_cont_md, table_cont_sd) %>%
+  filter(trait %in% continuous_traits,
+         term == "breastfed_as_a_baby",
+         model == "Adjusted for age, sex and TDI") %>%
+  ggplot(aes(x = estimate, y = trait)) +
+  geom_pointrange(aes(group = trait, 
+                     xmin = estimate - 1.96*std.error,
+                     xmax = estimate + 1.96*std.error),
+                    position = position_dodge2(width = 0.8),
+                    fatten = 0,
+                  shape = 3
+                     ) +
+  #facet_grid(~variant) +
+  theme_bw() +
+  ggsci::scale_colour_npg()+
+  scale_x_continuous(limits = quantitative_range)+
+  labs(#title = "SNP effect estimate by breastfeeding status",
+       #subtitle = "Error bars represent 95% confidence intervals",
+       x = "Regression coefficient (z-scores)",
+       y = ""
+       ) +
+  theme(axis.text.x = element_text(size = 8, 
+                                   angle = 45, 
+                                   hjust=1
+                                   ),
+        axis.text.y = element_text(size = 10)
+        #legend.position = "bottom",
+        #plot.margin = margin(10,10,10,50
+        )+
+  geom_vline(xintercept = 0, linetype = "dashed", colour = "darkgrey")
+
+continuous_forestplot
+```
+
+```{r plots-binary, echo = FALSE}
+binary_forestplot <- 
+table_bin %>%
+  filter(trait %in% binary_traits,
+         term == "breastfed_as_a_baby",
+         model == "Adjusted for age, sex and TDI") %>%
+  ggplot(aes(x = estimate, y = trait)) +
+  geom_pointrange(
+    aes(group = trait, 
+        xmin = estimate - 1.96*std.error,
+        xmax = estimate + 1.96*std.error),
+        position = position_dodge2(width = 0.8),
+        fatten = 0,
+        shape = 3
+    ) +
+  theme_bw() +
+  ggsci::scale_colour_npg()+
+  labs(x = "Regression coefficient (log odds)",
+       y = ""
+       ) +
+  theme(axis.text.x = element_text(size = 8, 
+                                   angle = 45, 
+                                   hjust=1
+                                   ),
+        axis.text.y = element_text(size = 10)
+        )+
+  geom_vline(xintercept = 0, linetype = "dashed", colour = "darkgrey")
+
+binary_forestplot
+```
+
+```{r all, echo = FALSE, fig.height= 10, fig.width= 6}
+
+# This just composes the plot stacking the parts together
+cognitive_forestplot / continuous_forestplot / binary_forestplot
+  
+```

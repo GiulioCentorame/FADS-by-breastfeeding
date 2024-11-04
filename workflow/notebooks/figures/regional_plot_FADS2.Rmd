@@ -1,0 +1,74 @@
+---
+title: "Regional plot for *FADS2* from Savage et al. (2018)"
+output: html_notebook
+---
+
+```{r setup, echo = FALSE}
+
+library(readr)
+library(EnsDb.Hsapiens.v75)
+library(dplyr)
+library(locuszoomr)
+
+#LDlink_token <- scan("../../../", what = character())
+LDlink_token <- scan(snakemake@params[["LDlink_token"]], what = character())
+
+# Load sumstats
+
+#NOTE has to be fread() for some reason
+sumstats <- 
+  #data.table::fread("../../sumstats/SavageJansen_2018_intelligence_metaanalysis.txt")
+  data.table::fread(snakemake@input[[1]])
+```
+
+```{r get-ld}
+
+# Get top SNP for the region
+
+window_FADS2 <-
+  sumstats %>% 
+  filter(between(POS, 61000, 62000))
+
+get_top_snp(window_FADS2, chr = 11)
+
+
+```
+
+```{r regional-plot, fig.height=12, fig.width=14, eval = FALSE}
+
+regionplot(sumstats,
+           #region = "11:61250000-61650000",
+           gene = "FADS2",
+           gene_padding = 250000,
+           rsids = c("rs77128898", "rs1535", "rs174575", "rs174583"),
+           alpha = 0.5,
+           rsids_color = "black",
+           annotate = 1,
+           build = 37)
+```
+
+```{r locuszoomr,  fig.height=12, fig.width=12}
+
+ss_clean <-
+  sumstats %>%
+  select(-UNIQUE_ID) %>%
+  # Restrict to SNPs only
+  filter(stringr::str_starts(SNP, "rs")) %>%
+  rename(p = P) %>%
+  filter(CHR == 11)
+
+locus_FADS2 <- locus(ss_clean,
+                     chrom = "CHR",
+                     pos = "POS",
+                     labs = "SNP",
+                     gene = "FADS2",
+                     flank = 400000,
+                     index_snp = "rs77128898",
+                     ens_db = "EnsDb.Hsapiens.v75")
+
+locus_FADS2 <- link_LD(locus_FADS2,
+                       pop = "CEU",
+                       LDtoken = LDlink_token)
+
+locus_plot(locus_FADS2, labels = c("index", "rs1535", "rs174575", "rs174583"))
+```

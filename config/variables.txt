@@ -1,0 +1,157 @@
+############# General data ############
+## Demographics
+# Month of birth
+52
+# Year of birth
+34
+# Reported sex
+31
+# Genetic sex
+22001
+# Breastfed or not
+1677
+# Principal components
+22009
+# Assessment centre
+54
+# Age when attended assessment centre
+21003
+# Date of attending assessment centre
+############## Intelligence and education #############
+## Fluid intelligence
+#FI full score
+20191
+20016
+# Date when completed FI test online
+20135
+# Completion status (online)
+20242
+## Matrix pattern completion (imaging clinics)
+# correct
+6373
+# viewed
+6374
+## Reaction time
+20023
+## Tower rearranging (imaging clinics)
+# correct
+21004
+# attempted
+6383
+## Numeric memory
+# assessment centre
+4282
+# online
+20240
+# Date when numeric memory test completed online
+20138
+# Completion status
+4281
+## Pairs matching
+# Assessment centre (earliest available instance for most)
+398
+399
+# online
+20131
+20132
+# Date when pairs matching completed online
+20134
+# completion status (online)
+20244
+## Paired associate learning
+20197
+## Reaction time (AC only)
+20023
+## Prospective memory
+20018
+# Completion status
+4287
+## Symbol digit substitution
+# Assessment centre
+23324
+23323
+# Online
+20159
+20195
+# Date at completion
+20137
+# Completed? (online)
+20245
+## Trail making
+# Imaging clinics
+6348
+6350
+# Online
+20156
+20157
+# Date at completion
+20136
+# completion status
+20246
+## Educational attainment
+# Age completed full time Education
+845
+# Qualifications (as of assessment centre)
+6138
+############## Medical conditions #############
+## Allegy, rhinitis, eczema etc. (age)
+3761
+## Vascular problems
+3627
+3894
+4056
+2966
+6150
+6152
+## Diabetes
+2976
+2443
+2986
+4041
+120007
+############## Cardiometabolic traits #############
+## Cholesterol
+# Total
+30690
+# LDL
+30780
+# HDL
+30760
+## Triglycerides
+30870
+## BMI
+21001
+## Blood pressure
+# DBP
+94
+4079
+# SBP
+93
+4080
+# Meds for blood pressure
+6153
+6177
+# Meds for diabetes
+6177
+6153
+############## Fitness ###############
+## Children fathered
+2405
+## Live births
+2734
+## Townsend deprivation index
+189
+## Multiple deprivation
+# MI England
+26410
+# MI Scotland
+26427
+# MI Wales
+26426
+############# QC genetic data ############
+# Batch
+22000
+# Plate
+22004
+# Well
+22008

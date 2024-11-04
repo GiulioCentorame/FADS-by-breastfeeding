@@ -1,0 +1,15 @@
+tempdir: /path/to/tempdir
+
+basket_path: /path/to/basket/folder
+
+basket_filename: ukbXXXXX
+
+chromosome_11_bgen: /path.bgen
+
+sample_file: /path.sample
+
+withdrawals: /path/to/withdrawals.csv
+
+std_exclusions: /path/to/std_exclusions.txt
+
+LDlink_token: /path/to/LDlink_token.txt

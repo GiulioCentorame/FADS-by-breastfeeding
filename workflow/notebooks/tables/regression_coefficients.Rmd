@@ -1,0 +1,227 @@
+---
+title: "Regression coefficients for interaction analyses"
+output:
+  html_document:
+    df_print: paged
+---
+
+This notebook contains the regression coefficients for the interaction analyses (across all ancestries and all allele coding strategies).
+
+The results of this notebook are also available in Supplementary Table 13 to 20
+
+# Setup
+
+```{r setup, include = FALSE}
+
+library(dplyr)
+library(purrr)
+library(tidyr)
+library(gt)
+library(stringr)
+library(gtExtras)
+
+# Function for subgroups table
+
+display_subgroups_table <- function(){
+  c("rs1535", "rs174575", "rs174583") %>%
+    map(
+      \(x){
+        summary_stats_plots %>%
+          ungroup() %>%
+          mutate(variant = str_extract(variant, "rs[0-9]+"),
+                 lower_ci = estimate-(1.96*std.error),
+                 upper_ci = estimate+(1.96*std.error)
+          ) %>%
+          filter(variant == x) %>%
+          select(-c(variant, statistic, std.error)) %>%
+          pivot_wider(
+            names_from = stratum, 
+            values_from = c(estimate, p.value, lower_ci, upper_ci)
+          ) %>%
+          gt(rowname_col = "covariates", groupname_col = "outcome") %>%
+          sub_missing(
+            columns = ends_with(c("Yes", "No", "Missing"))
+          ) %>%
+          fmt_number(
+            columns = starts_with(c("estimate", "std.error", "lower_ci", "upper_ci")),
+            decimals = 2
+          ) %>%
+          cols_merge(
+            columns = c("estimate_Total",	"lower_ci_Total", "upper_ci_Total"),
+            pattern = "<<{1}>><< [{2}, {3}]>>"
+          ) %>%
+          cols_merge(
+            columns = c("estimate_Yes",	"lower_ci_Yes", "upper_ci_Yes"),
+            pattern = "<<{1}>><< [{2}, {3}]>>"
+          ) %>%
+          cols_merge(
+            columns = c("estimate_No",	"lower_ci_No", "upper_ci_No"),
+            pattern = "<<{1}>><< [{2}, {3}]>>"
+          ) %>%
+          cols_merge(
+            columns = c("estimate_Missing",	"lower_ci_Missing", "upper_ci_Missing"),
+            pattern = "<<{1}>><< [{2}, {3}]>>"
+          ) %>%
+          tab_spanner(
+            label = "Total",
+            columns = (c("estimate_Total", "p.value_Total"))
+          ) %>%
+          tab_spanner(
+            label = "Breastfed",
+            columns = (c("estimate_Yes", "p.value_Yes"))
+          ) %>%
+          tab_spanner(
+            label = "Bottlefed",
+            columns = (c("estimate_No", "p.value_No"))
+          ) %>%
+          tab_spanner(
+            label = "Missing",
+            columns = (c("estimate_Missing", "p.value_Missing"))
+          ) %>%
+          cols_align(
+            align = "center",
+            columns = starts_with(c("estimate", "p.value"))
+          ) %>%
+          cols_label(
+            estimate_Total = md("*β* [CI]"),
+            p.value_Total = "p-value",
+            estimate_Yes = md("*β* [CI]"),
+            p.value_Yes = "p-value",
+            estimate_No = md("*β* [CI]"),
+            p.value_No = "p-value",
+            estimate_Missing = md("*β* [CI]"),
+            p.value_Missing = "p-value"
+          ) %>%
+          cols_align(align = "left", columns = 1)
+      }
+    ) %>%
+    purrr::iwalk(\(table, SNP) table %>% tab_caption(SNP))
+}
+
+display_interaction_table <- function(){
+  model_summary_interactions %>%
+    filter(str_detect(term, "rs[0-9]+_[ACGT]+:breastfed_as_a_baby")) %>%
+    mutate(variant = str_extract(term, "rs[0-9]+"),
+           lower_ci = estimate-(1.96*std.error),
+           upper_ci = estimate+(1.96*std.error)
+    ) %>%
+    select(-c(term, statistic, std.error)) %>%
+    pivot_wider(
+      names_from = variant, 
+      values_from = c(estimate, p.value, lower_ci, upper_ci)
+    ) %>%
+    gt(rowname_col = "covariates", groupname_col = "outcome") %>%
+    fmt_number(
+      columns = starts_with(c("estimate", "std.error", "lower_ci", "upper_ci")),
+      decimals = 2
+    ) %>%
+    cols_merge(
+      columns = c("estimate_rs1535",	"lower_ci_rs1535", "upper_ci_rs1535"),
+      pattern = "<<{1}>><< [{2}, {3}]>>"
+    ) %>%
+    cols_merge(
+      columns = c("estimate_rs174575",	"lower_ci_rs174575", "upper_ci_rs174575"),
+      pattern = "<<{1}>><< [{2}, {3}]>>"
+    ) %>%
+    cols_merge(
+      columns = c("estimate_rs174583",	"lower_ci_rs174583", "upper_ci_rs174583"),
+      pattern = "<<{1}>><< [{2}, {3}]>>"
+    ) %>%
+    tab_spanner(
+      label = "rs1535",
+      columns = (c("estimate_rs1535", "p.value_rs1535"))
+    ) %>%
+    tab_spanner(
+      label = "rs174575",
+      columns = (c("estimate_rs174575", "p.value_rs174575"))
+    ) %>%
+    tab_spanner(
+      label = "rs174583",
+      columns = (c("estimate_rs174583", "p.value_rs174583"))
+    ) %>%
+    cols_align(
+      align = "center",
+      columns = starts_with(c("estimate", "p.value"))
+    ) %>%
+    cols_label(
+      estimate_rs1535 = md("*β* [CI]"),
+      p.value_rs1535 = "p-value",
+      estimate_rs174575 = md("*β* [CI]"),
+      p.value_rs174575 = "p-value",
+      estimate_rs174583 = md("*β* [CI]"),
+      p.value_rs174583 = "p-value"
+    ) %>%
+    cols_align(align = "left", columns = 1)
+}
+```
+
+# Additive coding
+
+## White British
+
+### Subgroups
+
+```{r white-british-all, include = FALSE, results="asis"}
+
+base::load(snakemake@input[[1]])
+
+display_subgroups_table()
+```
+
+### Interaction terms
+
+```{r interaction-additive-white-british, include = FALSE}
+display_interaction_table()
+```
+
+## Any ancestry
+
+### Subgroups
+
+```{r all-ancestries-additive, include = FALSE, results = "asis"}
+
+base::load(snakemake@input[[2]])
+
+display_subgroups_table()
+```
+
+### Interaction terms
+
+```{r interaction-additive-all, include = FALSE}
+display_interaction_table()
+```
+
+# Recessive coding
+
+## White British
+
+### Subgroups
+
+```{r white-british-recessive, include = FALSE, results = "asis"}
+base::load(snakemake@input[[3]])
+
+display_subgroups_table()
+```
+
+### Interaction terms
+
+```{r interaction-recessive-white-british, include = FALSE}
+
+display_interaction_table()
+```
+
+## Any ancestry
+
+### Subgroups
+
+```{r all-ancestries-recessive, include = FALSE, results = "asis"}
+base::load(snakemake@input[[4]])
+
+display_subgroups_table()
+```
+
+### Interaction terms
+
+```{r interaction-recessive-any-ancestry, include = FALSE}
+display_interaction_table()
+```
